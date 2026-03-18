@@ -162,6 +162,7 @@ export function DiagramCanvas() {
     deleteElement, deleteSelected, deleteConnection, updateConnection,
     openIconSearch, openTextInput, closeTextInput,
     startConnecting, finishConnecting, cancelConnecting, setConnectionPreviewPos,
+    openConnectCreateMenu, setPendingConnectionFrom,
     pushHistory,
     connectingFromId, connectionPreviewPos,
     copySelected, paste, pasteAt, clipboard,
@@ -301,16 +302,46 @@ export function DiagramCanvas() {
       }
       if ((e.key === 'b' || e.key === 'B') && !e.metaKey && !e.ctrlKey) {
         e.preventDefault()
-        boxPlacementActiveRef.current = true
-        setBoxPlacementActive(true)
+        if (connectingFromIdRef.current) {
+          // Create box at cursor and auto-connect
+          const canvas = canvasRef.current
+          const rect = canvas?.getBoundingClientRect() ?? { left: 0, top: 0 }
+          const wp = screenToWorld(cursorPosRef.current.x - rect.left, cursorPosRef.current.y - rect.top, vpRef.current)
+          setPendingConnectionFrom(connectingFromIdRef.current)
+          cancelConnecting()
+          const el: BoxElement = { id: genId(), type: 'box', x: wp.x - 120, y: wp.y - 80, width: 240, height: 160, text: '', fontSize: Math.max(11, defaultFontSizeRef.current - 2) }
+          addElement(el); setSelected(el.id)
+        } else {
+          boxPlacementActiveRef.current = true
+          setBoxPlacementActive(true)
+        }
         return
       }
-      if (e.key === 'i' || e.key === '/') { e.preventDefault(); openIconSearch() }
+      if (e.key === 'i' || e.key === '/') {
+        e.preventDefault()
+        if (connectingFromIdRef.current) {
+          const canvas = canvasRef.current
+          const rect = canvas?.getBoundingClientRect() ?? { left: 0, top: 0 }
+          const wp = screenToWorld(cursorPosRef.current.x - rect.left, cursorPosRef.current.y - rect.top, vpRef.current)
+          setPendingConnectionFrom(connectingFromIdRef.current)
+          cancelConnecting()
+          openIconSearch({ x: wp.x, y: wp.y })
+        } else {
+          openIconSearch()
+        }
+      }
       if ((e.key === 't' || e.key === 'T') && !e.metaKey && !e.ctrlKey) {
         e.preventDefault()
         if (selectedConnectionIdRef.current) {
           const label = prompt('Connection label (leave blank to clear):') ?? null
           if (label !== null) updateConnection(selectedConnectionIdRef.current, { label: label || undefined })
+          return
+        }
+        if (connectingFromIdRef.current) {
+          const { x, y } = cursorPosRef.current
+          setPendingConnectionFrom(connectingFromIdRef.current)
+          cancelConnecting()
+          openTextInput(x, y)
           return
         }
         const canvas = canvasRef.current
@@ -418,7 +449,7 @@ export function DiagramCanvas() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [deleteElement, deleteSelected, deleteConnection, updateConnection, openIconSearch, openTextInput, closeTextInput, setSelected, setViewport, startConnecting, cancelConnecting, copySelected, paste, pasteAt, openColorPicker, closeColorPicker, openRename, closeRename, pushHistory, closeContextMenu])
+  }, [deleteElement, deleteSelected, deleteConnection, updateConnection, openIconSearch, openTextInput, closeTextInput, setSelected, setViewport, startConnecting, cancelConnecting, copySelected, paste, pasteAt, openColorPicker, closeColorPicker, openRename, closeRename, pushHistory, closeContextMenu, openConnectCreateMenu, setPendingConnectionFrom, addElement])
 
   // Re-evaluate cursor whenever mode changes (box placement, tool mode)
   useEffect(() => {
@@ -505,7 +536,7 @@ export function DiagramCanvas() {
           if (hit.kind === 'element' && hit.id !== connectingFromIdRef.current) {
             finishConnecting(hit.id)
           } else {
-            cancelConnecting()
+            openConnectCreateMenu(screenX, screenY, worldPos.x, worldPos.y)
           }
           return
         }

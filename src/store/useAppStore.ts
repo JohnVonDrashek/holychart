@@ -82,6 +82,8 @@ const EPHEMERAL_RESET = {
   selectedConnectionId: null,
   connectingFromId: null,
   connectionPreviewPos: null,
+  pendingConnectionFrom: null,
+  connectCreateMenuPos: null,
   toolMode: 'select' as ToolMode,
   isIconSearchOpen: false,
   textInputPos: null,
@@ -122,6 +124,8 @@ interface AppState {
   renamingId: string | null
   connectingFromId: ElementId | null
   connectionPreviewPos: { x: number; y: number } | null
+  pendingConnectionFrom: ElementId | null
+  connectCreateMenuPos: { screenX: number; screenY: number; worldX: number; worldY: number; fromId: ElementId } | null
   history: HistoryEntry[]
   contextMenuPos: { x: number; y: number } | null
 
@@ -167,6 +171,9 @@ interface AppState {
   closeColorPicker: () => void
   openRename: (id: string) => void
   closeRename: () => void
+  setPendingConnectionFrom: (id: ElementId | null) => void
+  openConnectCreateMenu: (screenX: number, screenY: number, worldX: number, worldY: number) => void
+  closeConnectCreateMenu: () => void
   // Connections
   addConnection: (c: ConnectionElement) => void
   deleteConnection: (id: ElementId) => void
@@ -214,6 +221,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   renamingId: null,
   connectingFromId: null,
   connectionPreviewPos: null,
+  pendingConnectionFrom: null,
+  connectCreateMenuPos: null,
   history: [],
   contextMenuPos: null,
 
@@ -287,7 +296,14 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setViewport: (viewport) => set({ viewport }),
   updateViewport: (partial) => set((s) => ({ viewport: { ...s.viewport, ...partial } })),
-  addElement: (el) => set((s) => withHistory(s, { elements: [...s.elements, el] })),
+  addElement: (el) => set((s) => {
+    const fromId = s.pendingConnectionFrom
+    if (fromId && fromId !== el.id) {
+      const conn: ConnectionElement = { id: Math.random().toString(36).slice(2, 10), type: 'connection', fromId, toId: el.id }
+      return withHistory(s, { elements: [...s.elements, el], connections: [...s.connections, conn], pendingConnectionFrom: null })
+    }
+    return withHistory(s, { elements: [...s.elements, el], pendingConnectionFrom: null })
+  }),
   updateElement: (id, partial) =>
     set((s) => ({ elements: s.elements.map((e) => e.id === id ? ({ ...e, ...partial } as DiagramElement) : e) })),
   deleteElement: (id) =>
@@ -438,6 +454,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   cancelConnecting: () =>
     set({ connectingFromId: null, connectionPreviewPos: null, toolMode: 'select', selectedConnectionId: null }),
   setConnectionPreviewPos: (connectionPreviewPos) => set({ connectionPreviewPos }),
+  setPendingConnectionFrom: (id) => set({ pendingConnectionFrom: id }),
+  openConnectCreateMenu: (screenX, screenY, worldX, worldY) =>
+    set((s) => ({
+      connectCreateMenuPos: { screenX, screenY, worldX, worldY, fromId: s.connectingFromId! },
+      connectingFromId: null,
+      connectionPreviewPos: null,
+      toolMode: 'select',
+    })),
+  closeConnectCreateMenu: () => set({ connectCreateMenuPos: null }),
 }))
 
 // ── Auto-save (module-level, debounced) ───────────────────────────────────────

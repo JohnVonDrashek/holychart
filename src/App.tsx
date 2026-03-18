@@ -7,6 +7,7 @@ import { ColorPicker } from './components/ColorPicker'
 import { DiagramTabs } from './components/DiagramTabs'
 import { RenameInput } from './components/RenameInput'
 import { ContextMenu } from './components/ContextMenu'
+import { ConnectCreateMenu } from './components/ConnectCreateMenu'
 import { useAppStore, selectResolvedTheme } from './store/useAppStore'
 import { invalidateThemeColors } from './themes/themeColors'
 
@@ -47,6 +48,7 @@ export default function App() {
       <ColorPicker />
       <RenameInput />
       <ContextMenu />
+      <ConnectCreateMenu />
       <DiagramTabs />
     </div>
   )
