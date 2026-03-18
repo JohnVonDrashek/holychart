@@ -128,10 +128,10 @@ function drawIconElement(
     ctx.strokeStyle = tc.accent
     ctx.lineWidth = 1.5
     ctx.setLineDash([4, 3])
-    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + sw, sy); ctx.stroke()
-    ctx.beginPath(); ctx.moveTo(sx + sw, sy); ctx.lineTo(sx + sw, sy + sh); ctx.stroke()
-    ctx.beginPath(); ctx.moveTo(sx + sw, sy + sh); ctx.lineTo(sx, sy + sh); ctx.stroke()
-    ctx.beginPath(); ctx.moveTo(sx, sy + sh); ctx.lineTo(sx, sy); ctx.stroke()
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + sw, sy); ctx.stroke()       // top:    tl → tr
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx, sy + sh); ctx.stroke()       // left:   tl → bl  (same anchor as top)
+    ctx.beginPath(); ctx.moveTo(sx + sw, sy); ctx.lineTo(sx + sw, sy + sh); ctx.stroke() // right:  tr → br
+    ctx.beginPath(); ctx.moveTo(sx, sy + sh); ctx.lineTo(sx + sw, sy + sh); ctx.stroke() // bottom: bl → br
     ctx.setLineDash([])
     ctx.restore()
 
@@ -259,10 +259,10 @@ function drawBoxElement(
     ctx.strokeStyle = tc.accent
     ctx.lineWidth = 1.5
     ctx.setLineDash([4, 3])
-    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + sw, sy); ctx.stroke()
-    ctx.beginPath(); ctx.moveTo(sx + sw, sy); ctx.lineTo(sx + sw, sy + sh); ctx.stroke()
-    ctx.beginPath(); ctx.moveTo(sx + sw, sy + sh); ctx.lineTo(sx, sy + sh); ctx.stroke()
-    ctx.beginPath(); ctx.moveTo(sx, sy + sh); ctx.lineTo(sx, sy); ctx.stroke()
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + sw, sy); ctx.stroke()       // top:    tl → tr
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx, sy + sh); ctx.stroke()       // left:   tl → bl  (same anchor as top)
+    ctx.beginPath(); ctx.moveTo(sx + sw, sy); ctx.lineTo(sx + sw, sy + sh); ctx.stroke() // right:  tr → br
+    ctx.beginPath(); ctx.moveTo(sx, sy + sh); ctx.lineTo(sx + sw, sy + sh); ctx.stroke() // bottom: bl → br
     ctx.setLineDash([])
     ctx.restore()
   }
@@ -301,10 +301,10 @@ function drawTextElement(
     ctx.strokeStyle = tc.accent
     ctx.lineWidth = 1.5
     ctx.setLineDash([4, 3])
-    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + sw, sy); ctx.stroke()
-    ctx.beginPath(); ctx.moveTo(sx + sw, sy); ctx.lineTo(sx + sw, sy + sh); ctx.stroke()
-    ctx.beginPath(); ctx.moveTo(sx + sw, sy + sh); ctx.lineTo(sx, sy + sh); ctx.stroke()
-    ctx.beginPath(); ctx.moveTo(sx, sy + sh); ctx.lineTo(sx, sy); ctx.stroke()
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + sw, sy); ctx.stroke()       // top:    tl → tr
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx, sy + sh); ctx.stroke()       // left:   tl → bl  (same anchor as top)
+    ctx.beginPath(); ctx.moveTo(sx + sw, sy); ctx.lineTo(sx + sw, sy + sh); ctx.stroke() // right:  tr → br
+    ctx.beginPath(); ctx.moveTo(sx, sy + sh); ctx.lineTo(sx + sw, sy + sh); ctx.stroke() // bottom: bl → br
     ctx.setLineDash([])
     ctx.restore()
 
