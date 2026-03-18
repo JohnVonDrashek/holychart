@@ -15,7 +15,11 @@ export function FormatBar({ editorRef, hint }: FormatBarProps) {
       setItalicActive(document.queryCommandState('italic'))
     }
     document.addEventListener('selectionchange', update)
-    return () => document.removeEventListener('selectionchange', update)
+    document.addEventListener('keyup', update)
+    return () => {
+      document.removeEventListener('selectionchange', update)
+      document.removeEventListener('keyup', update)
+    }
   }, [])
 
   const apply = (e: React.MouseEvent, cmd: string) => {

@@ -130,9 +130,9 @@ export class GestureController {
 
   private onKeyDown = (e: KeyboardEvent) => {
     if (e.code === 'Space' && !e.repeat) {
-      // Only engage space-pan if not in an input
-      const target = e.target as Element
-      if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
+      // Only engage space-pan if not in an input or rich-text editor
+      const target = e.target as HTMLElement
+      if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA' && !target.isContentEditable) {
         this.spaceHeld = true
         e.preventDefault()
       }
