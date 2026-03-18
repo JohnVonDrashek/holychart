@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useAppStore, selectResolvedTheme } from '../store/useAppStore'
 import { resetRotation } from '../canvas/ViewportMatrix'
 import type { Diagram } from '../store/types'
@@ -8,8 +8,13 @@ export function Toolbar() {
   const resolvedTheme = useAppStore(selectResolvedTheme)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const [fontSizeInput, setFontSizeInput] = useState<string | null>(null)
+  const commitFontSize = (raw: string) => {
+    const val = parseInt(raw)
+    if (!isNaN(val) && val >= 8 && val <= 96) setDefaultFontSize(val)
+    setFontSizeInput(null)
+  }
   const changeFontSize = (delta: number) => setDefaultFontSize(defaultFontSize + delta)
-  const setFontSizeDirect = (val: number) => setDefaultFontSize(val)
 
   const resetView = () => {
     const canvas = document.querySelector('canvas')
@@ -79,8 +84,8 @@ export function Toolbar() {
       }}
     >
       {/* App name */}
-      <span style={{ color: 'var(--accent)', fontWeight: 700, fontSize: 14, letterSpacing: '-0.3px', paddingRight: 8, borderRight: '1px solid var(--border)', marginRight: 4 }}>
-        diagramr
+      <span style={{ color: 'var(--accent)', fontWeight: 700, fontSize: 14, letterSpacing: '-0.3px', paddingRight: 8, borderRight: '1px solid var(--border)', marginRight: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
+        HolyChart <span style={{ fontSize: 18, opacity: 0.8 }}>✝</span>
       </span>
 
       {/* Add icon */}
@@ -111,10 +116,15 @@ export function Toolbar() {
         >−</button>
         <input
           type="number"
-          value={defaultFontSize}
+          value={fontSizeInput ?? defaultFontSize}
           min={8} max={96}
-          onChange={(e) => setFontSizeDirect(parseInt(e.target.value) || defaultFontSize)}
-          onKeyDown={(e) => e.stopPropagation()}
+          onChange={(e) => setFontSizeInput(e.target.value)}
+          onBlur={(e) => commitFontSize(e.target.value)}
+          onKeyDown={(e) => {
+            e.stopPropagation()
+            if (e.key === 'Enter') { commitFontSize((e.target as HTMLInputElement).value); (e.target as HTMLInputElement).blur() }
+            if (e.key === 'Escape') { setFontSizeInput(null); (e.target as HTMLInputElement).blur() }
+          }}
           title="Font size (applies to all text)"
           style={{
             width: 34, textAlign: 'center', background: 'transparent',
