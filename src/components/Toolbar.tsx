@@ -10,6 +10,7 @@ export function Toolbar() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [fontSizeInput, setFontSizeInput] = useState<string | null>(null)
+  const fontSizeScrollAccum = useRef(0)
   const commitFontSize = (raw: string) => {
     const val = parseInt(raw)
     if (!isNaN(val) && val >= 8 && val <= 96) setDefaultFontSize(val)
@@ -127,7 +128,12 @@ export function Toolbar() {
           onBlur={(e) => commitFontSize(e.target.value)}
           onWheel={(e) => {
             e.preventDefault()
-            changeFontSize(e.deltaY < 0 ? 1 : -1)
+            fontSizeScrollAccum.current += e.deltaY
+            const threshold = 20
+            if (Math.abs(fontSizeScrollAccum.current) >= threshold) {
+              changeFontSize(fontSizeScrollAccum.current < 0 ? 1 : -1)
+              fontSizeScrollAccum.current = 0
+            }
           }}
           onKeyDown={(e) => {
             e.stopPropagation()
