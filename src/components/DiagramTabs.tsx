@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAppStore, selectResolvedTheme } from '../store/useAppStore'
+import { Tooltip } from './Tooltip'
 
 export function DiagramTabs() {
   const { diagrams, activeDiagramId, createDiagram, switchDiagram, renameDiagram, deleteDiagram } = useAppStore()
@@ -102,9 +103,9 @@ export function DiagramTabs() {
             )}
 
             {diagrams.length > 1 && !isEditing && (
+              <Tooltip content="Close diagram">
               <button
                 onClick={(e) => { e.stopPropagation(); deleteDiagram(diagram.id) }}
-                title="Close diagram"
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer',
                   color: 'var(--text-tab-inactive)', fontSize: 13, lineHeight: 1,
@@ -117,15 +118,16 @@ export function DiagramTabs() {
               >
                 ×
               </button>
+              </Tooltip>
             )}
           </div>
         )
       })}
 
       {/* New diagram button */}
+      <Tooltip content="New diagram (⌘⇧N)">
       <button
         onClick={createDiagram}
-        title="New diagram (⌘⇧N)"
         style={{
           background: 'none', border: 'none', cursor: 'pointer',
           color: 'var(--text-tab-inactive)', fontSize: 18, lineHeight: 1,
@@ -139,6 +141,7 @@ export function DiagramTabs() {
       >
         +
       </button>
+      </Tooltip>
     </div>
   )
 }

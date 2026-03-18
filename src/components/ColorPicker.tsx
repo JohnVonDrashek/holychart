@@ -1,5 +1,6 @@
 import { useRef, useEffect, useCallback, useState } from 'react'
 import { useAppStore, selectPrimaryId } from '../store/useAppStore'
+import { Tooltip } from './Tooltip'
 
 // Default swatch first — must match the cycle order in DiagramCanvas 'c' key handler
 const PRESETS = [
@@ -424,9 +425,8 @@ export function ColorPicker() {
         const isDefault = p.value === ''
 
         return (
+          <Tooltip key={i} content={p.label}>
           <button
-            key={i}
-            title={p.label}
             onClick={() => applyAndClose(isActive && !isDefault ? '' : p.value)}
             style={{
               position: 'absolute',
@@ -468,13 +468,14 @@ export function ColorPicker() {
               </svg>
             )}
           </button>
+          </Tooltip>
         )
       })}
 
       {/* Center: open custom picker */}
+      <Tooltip content="Custom color">
       <button
         onClick={openCustom}
-        title="Custom color"
         style={{
           position: 'absolute',
           left: '50%',
@@ -499,6 +500,7 @@ export function ColorPicker() {
             : 'conic-gradient(#f43f5e, #f59e0b, #10b981, #06b6d4, #6366f1, #ec4899, #f43f5e)',
         }} />
       </button>
+      </Tooltip>
     </div>
   )
 }

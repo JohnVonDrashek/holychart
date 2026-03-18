@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useAppStore, selectResolvedTheme } from '../store/useAppStore'
 import { resetRotation } from '../canvas/ViewportMatrix'
+import { Tooltip } from './Tooltip'
 import type { Diagram } from '../store/types'
 
 export function Toolbar() {
@@ -107,13 +108,15 @@ export function Toolbar() {
 
       {/* Font size */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 2, marginLeft: 2 }}>
+        <Tooltip content="Decrease font size">
         <button
           onClick={() => changeFontSize(-2)}
-          title="Decrease font size"
           style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', fontSize: 14, lineHeight: 1, padding: '2px 4px', borderRadius: 'var(--radius-sm)' }}
           onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--hover-bg)' }}
           onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'none' }}
         >−</button>
+        </Tooltip>
+        <Tooltip content="Font size (applies to all text)">
         <input
           type="number"
           value={fontSizeInput ?? defaultFontSize}
@@ -125,7 +128,6 @@ export function Toolbar() {
             if (e.key === 'Enter') { commitFontSize((e.target as HTMLInputElement).value); (e.target as HTMLInputElement).blur() }
             if (e.key === 'Escape') { setFontSizeInput(null); (e.target as HTMLInputElement).blur() }
           }}
-          title="Font size (applies to all text)"
           style={{
             width: 34, textAlign: 'center', background: 'transparent',
             border: '1px solid var(--border)',
@@ -134,13 +136,15 @@ export function Toolbar() {
             MozAppearance: 'textfield',
           } as React.CSSProperties}
         />
+        </Tooltip>
+        <Tooltip content="Increase font size">
         <button
           onClick={() => changeFontSize(2)}
-          title="Increase font size"
           style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', fontSize: 14, lineHeight: 1, padding: '2px 4px', borderRadius: 'var(--radius-sm)' }}
           onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--hover-bg)' }}
           onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'none' }}
         >+</button>
+        </Tooltip>
       </div>
 
       {/* Delete */}
@@ -183,9 +187,9 @@ export function Toolbar() {
 
       {/* Rotation reset badge — only shows when canvas is rotated */}
       {rotationDeg !== 0 && (
+        <Tooltip content="Reset rotation (O)">
         <button
           onClick={resetView}
-          title="Reset rotation to origin (O)"
           style={{ background: 'var(--accent-bg-subtle)', border: '1px solid var(--accent-border)', borderRadius: 'var(--radius-md)', color: 'var(--accent-light)', padding: '3px 8px', cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}
         >
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -194,6 +198,7 @@ export function Toolbar() {
           </svg>
           {rotationDeg}°
         </button>
+        </Tooltip>
       )}
 
       {/* Zoom */}
@@ -253,9 +258,9 @@ function ToolBtn({
   active?: boolean
 }) {
   return (
+    <Tooltip content={title}>
     <button
       onClick={onClick}
-      title={title}
       style={{
         display: 'flex', alignItems: 'center', gap: 4,
         background: active ? 'var(--accent-bg-subtle)' : 'transparent',
@@ -275,6 +280,7 @@ function ToolBtn({
     >
       {children}
     </button>
+    </Tooltip>
   )
 }
 
