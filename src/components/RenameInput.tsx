@@ -82,7 +82,9 @@ export function RenameInput() {
           suppressContentEditableWarning
           onKeyDown={(e) => {
             if (e.key === 'Escape') { closeRename(); return }
-            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); confirmText() }
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); confirmText(); return }
+            if ((e.metaKey || e.ctrlKey) && e.key === 'b') { e.preventDefault(); document.execCommand('bold'); return }
+            if ((e.metaKey || e.ctrlKey) && e.key === 'i') { e.preventDefault(); document.execCommand('italic'); return }
           }}
           onBlur={confirmText}
           style={{

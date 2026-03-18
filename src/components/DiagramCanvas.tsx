@@ -112,7 +112,9 @@ function TextInputOverlay() {
         suppressContentEditableWarning
         onKeyDown={(e) => {
           if (e.key === 'Escape') { closeTextInput(); return }
-          if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); confirm() }
+          if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); confirm(); return }
+          if ((e.metaKey || e.ctrlKey) && e.key === 'b') { e.preventDefault(); document.execCommand('bold'); return }
+          if ((e.metaKey || e.ctrlKey) && e.key === 'i') { e.preventDefault(); document.execCommand('italic'); return }
         }}
         onBlur={confirm}
         style={editorStyle}
