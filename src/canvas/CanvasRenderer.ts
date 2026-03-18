@@ -119,13 +119,21 @@ function drawIconElement(
   }
 
   if (selected) {
-    ctx.strokeStyle = tc.accent
-    ctx.lineWidth = 2 / 1
-    ctx.setLineDash([4, 2])
+    const sx = el.x - 3, sy = el.y - 3, sw = el.width + 6, sh = el.height + 6
+    ctx.save()
+    ctx.fillStyle = tc.canvasMarqueeFill
     ctx.beginPath()
-    ctx.roundRect(el.x - 3, el.y - 3, el.width + 6, el.height + 6, tc.radiusMd)
-    ctx.stroke()
+    ctx.roundRect(sx, sy, sw, sh, tc.radiusMd)
+    ctx.fill()
+    ctx.strokeStyle = tc.accent
+    ctx.lineWidth = 1.5
+    ctx.setLineDash([4, 3])
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + sw, sy); ctx.stroke()
+    ctx.beginPath(); ctx.moveTo(sx + sw, sy); ctx.lineTo(sx + sw, sy + sh); ctx.stroke()
+    ctx.beginPath(); ctx.moveTo(sx + sw, sy + sh); ctx.lineTo(sx, sy + sh); ctx.stroke()
+    ctx.beginPath(); ctx.moveTo(sx, sy + sh); ctx.lineTo(sx, sy); ctx.stroke()
     ctx.setLineDash([])
+    ctx.restore()
 
     if (showHandles) {
       drawHandles(ctx, el, tc)
@@ -242,13 +250,21 @@ function drawBoxElement(
   }
 
   if (selected) {
-    ctx.strokeStyle = tc.accent
-    ctx.lineWidth = 2
-    ctx.setLineDash([4, 2])
+    const sx = el.x - 3, sy = el.y - 3, sw = el.width + 6, sh = el.height + 6
+    ctx.save()
+    ctx.fillStyle = tc.canvasMarqueeFill
     ctx.beginPath()
-    ctx.roundRect(el.x - 3, el.y - 3, el.width + 6, el.height + 6, tc.radiusLg)
-    ctx.stroke()
+    ctx.roundRect(sx, sy, sw, sh, tc.radiusLg)
+    ctx.fill()
+    ctx.strokeStyle = tc.accent
+    ctx.lineWidth = 1.5
+    ctx.setLineDash([4, 3])
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + sw, sy); ctx.stroke()
+    ctx.beginPath(); ctx.moveTo(sx + sw, sy); ctx.lineTo(sx + sw, sy + sh); ctx.stroke()
+    ctx.beginPath(); ctx.moveTo(sx + sw, sy + sh); ctx.lineTo(sx, sy + sh); ctx.stroke()
+    ctx.beginPath(); ctx.moveTo(sx, sy + sh); ctx.lineTo(sx, sy); ctx.stroke()
     ctx.setLineDash([])
+    ctx.restore()
   }
 
   if (selected && showHandles) drawHandles(ctx, el, tc)
@@ -278,16 +294,22 @@ function drawTextElement(
 
   if (selected) {
     const metrics = ctx.measureText(el.text)
-    const w = metrics.width
-    const h = fontSize * 1.2
+    const sx = el.x - 4, sy = el.y - 4, sw = metrics.width + 8, sh = fontSize * 1.2 + 8
+    ctx.save()
+    ctx.fillStyle = tc.canvasMarqueeFill
+    ctx.fillRect(sx, sy, sw, sh)
     ctx.strokeStyle = tc.accent
     ctx.lineWidth = 1.5
-    ctx.setLineDash([4, 2])
-    ctx.strokeRect(el.x - 4, el.y - 4, w + 8, h + 8)
+    ctx.setLineDash([4, 3])
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + sw, sy); ctx.stroke()
+    ctx.beginPath(); ctx.moveTo(sx + sw, sy); ctx.lineTo(sx + sw, sy + sh); ctx.stroke()
+    ctx.beginPath(); ctx.moveTo(sx + sw, sy + sh); ctx.lineTo(sx, sy + sh); ctx.stroke()
+    ctx.beginPath(); ctx.moveTo(sx, sy + sh); ctx.lineTo(sx, sy); ctx.stroke()
     ctx.setLineDash([])
+    ctx.restore()
 
     if (showHandles) {
-      drawHandles(ctx, { x: el.x - 4, y: el.y - 4, width: w + 8, height: h + 8 }, tc)
+      drawHandles(ctx, { x: sx, y: sy, width: sw, height: sh }, tc)
     }
   }
 }

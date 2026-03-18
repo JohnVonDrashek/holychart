@@ -59,6 +59,7 @@ interface StoredData {
   theme?: Theme
   defaultFontSize?: number
   rotationEnabled?: boolean
+  hierarchyMove?: boolean
 }
 
 function loadFromStorage(): StoredData | null {
@@ -68,9 +69,9 @@ function loadFromStorage(): StoredData | null {
   } catch { return null }
 }
 
-function saveToStorage(diagrams: Diagram[], activeDiagramId: string, theme: Theme, defaultFontSize: number, rotationEnabled: boolean): void {
+function saveToStorage(diagrams: Diagram[], activeDiagramId: string, theme: Theme, defaultFontSize: number, rotationEnabled: boolean, hierarchyMove: boolean): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ diagrams, activeDiagramId, theme, defaultFontSize, rotationEnabled }))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ diagrams, activeDiagramId, theme, defaultFontSize, rotationEnabled, hierarchyMove }))
   } catch { /* quota exceeded */ }
 }
 
@@ -197,7 +198,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   selectedConnectionId: null,
   toolMode: 'select',
   rotationEnabled: saved?.rotationEnabled ?? true,
-  hierarchyMove: false,
+  hierarchyMove: saved?.hierarchyMove ?? false,
   defaultFontSize: saved?.defaultFontSize ?? 16,
   theme: saved?.theme ?? 'system',
   systemTheme: getSystemTheme(),
@@ -427,7 +428,7 @@ function flushSave(state: AppState): void {
   const diagrams = state.diagrams.map((d) =>
     d.id === state.activeDiagramId ? snapshot : d
   )
-  saveToStorage(diagrams, state.activeDiagramId, state.theme, state.defaultFontSize, state.rotationEnabled)
+  saveToStorage(diagrams, state.activeDiagramId, state.theme, state.defaultFontSize, state.rotationEnabled, state.hierarchyMove)
 }
 
 let _saveTimer: ReturnType<typeof setTimeout> | null = null

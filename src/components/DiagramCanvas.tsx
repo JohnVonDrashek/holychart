@@ -213,6 +213,9 @@ export function DiagramCanvas() {
   // Keyboard shortcuts
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // Prevent Alt from activating the browser/OS menu bar on Windows
+      if (e.key === 'Alt') { e.preventDefault(); return }
+
       const target = e.target as Element
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return
 
