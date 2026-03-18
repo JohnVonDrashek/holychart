@@ -1,0 +1,72 @@
+:root[data-theme="nord"] {
+  /* Core */
+  --bg: #2e3440;
+  --text: #eceff4;
+
+  /* Surfaces */
+  --surface: rgba(59,66,82,0.92);
+  --surface-overlay: rgba(59,66,82,0.97);
+  --surface-dim: rgba(46,52,64,0.94);
+  --surface-glass: rgba(46,52,64,0.82);
+
+  /* Borders */
+  --border: rgba(216,222,233,0.12);
+  --border-subtle: rgba(216,222,233,0.08);
+  --border-muted: rgba(216,222,233,0.15);
+  --border-strong: rgba(216,222,233,0.2);
+
+  /* Text levels */
+  --text-strong: rgba(236,239,244,0.95);
+  --text-secondary: rgba(229,233,240,0.8);
+  --text-tertiary: rgba(229,233,240,0.6);
+  --text-muted: rgba(229,233,240,0.4);
+  --text-kbd: rgba(229,233,240,0.75);
+  --text-faint: rgba(229,233,240,0.28);
+  --text-icon: rgba(229,233,240,0.5);
+  --text-tab-inactive: rgba(229,233,240,0.45);
+
+  /* Interactive */
+  --hover-bg: rgba(216,222,233,0.08);
+  --hover-bg-subtle: rgba(216,222,233,0.06);
+  --kbd-bg: rgba(216,222,233,0.1);
+
+  /* Accent — Nord frost blue */
+  --accent: #88c0d0;
+  --accent-light: #8fbcbb;
+  --accent-border: rgba(136,192,208,0.5);
+  --accent-border-strong: rgba(136,192,208,0.6);
+  --accent-bg: rgba(136,192,208,0.18);
+  --accent-bg-subtle: rgba(136,192,208,0.12);
+  --accent-highlight-border: rgba(136,192,208,0.35);
+
+  /* Canvas */
+  --canvas-grid: rgba(216,222,233,0.04);
+  --canvas-grid-accent: rgba(216,222,233,0.1);
+  --canvas-box-stroke: rgba(143,188,187,0.35);
+  --canvas-box-fill: rgba(143,188,187,0.08);
+  --canvas-box-glow: rgba(136,192,208,0.4);
+  --canvas-box-text: rgba(229,233,240,0.65);
+  --canvas-connection: rgba(143,188,187,0.55);
+  --canvas-connection-preview: rgba(136,192,208,0.7);
+  --canvas-label-bg: rgba(46,52,64,0.8);
+  --canvas-label-text: rgba(229,233,240,0.9);
+  --canvas-label-text-secondary: rgba(229,233,240,0.8);
+  --canvas-placeholder-fill: rgba(136,192,208,0.12);
+  --canvas-placeholder-stroke: rgba(136,192,208,0.35);
+  --canvas-placeholder-dot: rgba(136,192,208,0.5);
+  --canvas-marquee-fill: rgba(136,192,208,0.08);
+  --canvas-origin: rgba(136,192,208,0.5);
+
+  /* Shadows */
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.45);
+  --shadow-md: 0 4px 20px rgba(0,0,0,0.35);
+  --shadow-input: 0 4px 20px rgba(0,0,0,0.3);
+
+  /* Scrollbar */
+  --scrollbar: rgba(216,222,233,0.15);
+  --scrollbar-hover: rgba(216,222,233,0.25);
+
+  /* Danger — Nord aurora red */
+  --danger: #bf616a;
+  --danger-bg: rgba(191,97,106,0.12);
+}

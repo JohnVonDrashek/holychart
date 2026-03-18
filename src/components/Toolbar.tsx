@@ -6,7 +6,6 @@ import type { Diagram } from '../store/types'
 export function Toolbar() {
   const { selectedIds, deleteSelected, openIconSearch, viewport, setViewport, theme, toggleTheme, toolMode, rotationEnabled, toggleRotation, hierarchyMove, toggleHierarchyMove, defaultFontSize, setDefaultFontSize, diagrams, activeDiagramId, elements, connections, importDiagram } = useAppStore()
   const resolvedTheme = useAppStore(selectResolvedTheme)
-  const isDark = resolvedTheme === 'dark'
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const changeFontSize = (delta: number) => setDefaultFontSize(defaultFontSize + delta)
@@ -194,29 +193,13 @@ export function Toolbar() {
 
       <Divider />
 
-      {/* Theme toggle — cycles system → dark → light */}
+      {/* Theme toggle — cycles system → dark → light → nord */}
       <ToolBtn
         title={`Theme: ${theme} (click to cycle)`}
         onClick={toggleTheme}
         active={theme !== 'system'}
       >
-        {theme === 'system' ? (
-          // Monitor icon = system
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="2" y="3" width="20" height="14" rx="2" />
-            <path d="M8 21h8M12 17v4" />
-          </svg>
-        ) : isDark ? (
-          // Moon = dark
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-          </svg>
-        ) : (
-          // Sun = light
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="5" /><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-          </svg>
-        )}
+        <ThemeIcon theme={theme} resolvedTheme={resolvedTheme} />
         <span style={{ fontSize: 10 }}>{theme}</span>
       </ToolBtn>
 
@@ -297,5 +280,44 @@ function ToolBtn({
     >
       {children}
     </button>
+  )
+}
+
+function ThemeIcon({ theme, resolvedTheme }: { theme: string; resolvedTheme: string }) {
+  if (theme === 'system') {
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="2" y="3" width="20" height="14" rx="2" />
+        <path d="M8 21h8M12 17v4" />
+      </svg>
+    )
+  }
+  if (resolvedTheme === 'dark') {
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+      </svg>
+    )
+  }
+  if (resolvedTheme === 'light') {
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="12" cy="12" r="5" /><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+      </svg>
+    )
+  }
+  if (resolvedTheme === 'nord') {
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M19.07 4.93L4.93 19.07" />
+        <circle cx="12" cy="12" r="3" />
+      </svg>
+    )
+  }
+  // Fallback for any future theme — palette icon
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="10" /><circle cx="12" cy="8" r="1.5" fill="currentColor" /><circle cx="16" cy="12" r="1.5" fill="currentColor" /><circle cx="8" cy="12" r="1.5" fill="currentColor" />
+    </svg>
   )
 }

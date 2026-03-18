@@ -307,7 +307,7 @@ function drawConnections(
   connections: ConnectionElement[],
   elements: DiagramElement[],
   selectedConnectionId: string | null,
-  _theme: 'dark' | 'light',
+  _theme: string,
   fontSize: number,
   tc: ThemeColors
 ) {
@@ -355,7 +355,7 @@ function drawConnectionPreview(
   ctx: CanvasRenderingContext2D,
   fromEl: DiagramElement,
   previewPos: { x: number; y: number },
-  _theme: 'dark' | 'light',
+  _theme: string,
   tc: ThemeColors
 ) {
   const start = bboxEdgePoint(fromEl, previewPos)
@@ -365,7 +365,7 @@ function drawConnectionPreview(
 function drawMarquee(
   ctx: CanvasRenderingContext2D,
   rect: { x1: number; y1: number; x2: number; y2: number },
-  _theme: 'dark' | 'light',
+  _theme: string,
   tc: ThemeColors
 ) {
   const { x1, y1, x2, y2 } = rect
@@ -419,7 +419,7 @@ export function render(
   dpr: number,
   cssW: number,
   cssH: number,
-  theme: 'dark' | 'light',
+  theme: string,
   defaultFontSize: number
 ) {
   const tc = getThemeColors()

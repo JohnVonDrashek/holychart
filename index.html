@@ -7,7 +7,7 @@
     <script>
       try {
         var s = JSON.parse(localStorage.getItem('diagramr:v1') || '{}')
-        var t = s.theme === 'dark' ? 'dark' : s.theme === 'light' ? 'light' : window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        var t = s.theme && s.theme !== 'system' ? s.theme : window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
         document.documentElement.setAttribute('data-theme', t)
       } catch(e) {}
     </script>

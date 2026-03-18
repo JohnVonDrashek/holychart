@@ -1,5 +1,5 @@
 export type ToolMode = 'select' | 'text' | 'connect'
-export type Theme = 'dark' | 'light' | 'system'
+export type { Theme } from '../themes'
 
 export interface ViewportState {
   panX: number

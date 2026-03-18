@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { ViewportState, DiagramElement, ElementId, ToolMode, Theme, ConnectionElement, Diagram } from './types'
+import { THEMES } from '../themes'
 
 // ── History helper ────────────────────────────────────────────────────────────
 
@@ -174,8 +175,8 @@ interface AppState {
   setConnectionPreviewPos: (pos: { x: number; y: number } | null) => void
 }
 
-export const selectResolvedTheme = (s: AppState): 'dark' | 'light' =>
-  s.theme === 'system' ? s.systemTheme : (s.theme as 'dark' | 'light')
+export const selectResolvedTheme = (s: AppState): string =>
+  s.theme === 'system' ? s.systemTheme : s.theme
 
 export const selectPrimaryId = (s: AppState): string | null => s.selectedIds[0] ?? null
 
@@ -330,7 +331,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   toggleTheme: () =>
     set((s) => {
-      const order: Theme[] = ['system', 'dark', 'light']
+      const order: Theme[] = ['system', ...THEMES]
       const next$ = { theme: order[(order.indexOf(s.theme) + 1) % order.length] }
       setTimeout(() => flushSave({ ...s, ...next$ }), 0)
       return next$
