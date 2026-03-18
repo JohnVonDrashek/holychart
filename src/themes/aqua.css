@@ -85,6 +85,7 @@
 
   /* Color picker */
   --color-picker-arrow: rgba(0,0,0,0.45);
+  --canvas-connect-candidate: rgba(21,128,61,0.9);
 
   /* Danger — Aqua red gel */
   --danger: #e03030;

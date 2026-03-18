@@ -621,7 +621,7 @@ export function render(
       ctx.save()
       ctx.fillStyle = tc.canvasMarqueeFill
       ctx.beginPath(); ctx.roundRect(sx, sy, sw, sh, tc.radiusMd); ctx.fill()
-      ctx.strokeStyle = tc.canvasConnectionPreview
+      ctx.strokeStyle = tc.canvasConnectCandidate
       ctx.lineWidth = 1.5
       ctx.setLineDash([4, 3])
       ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + sw, sy); ctx.stroke()
@@ -640,7 +640,8 @@ export function render(
       const candEl = connectCandidateId ? elements.find((e) => e.id === connectCandidateId) : null
       const targetPos = candEl ? bboxEdgePoint(candEl, elementCenter(fromEl)) : connectionPreviewPos
       const startPos = candEl ? bboxEdgePoint(fromEl, elementCenter(candEl)) : bboxEdgePoint(fromEl, connectionPreviewPos)
-      drawArrow(ctx, startPos.x, startPos.y, targetPos.x, targetPos.y, tc.canvasConnectionPreview, 'dashed')
+      const arrowColor = candEl ? tc.canvasConnectCandidate : tc.canvasConnectionPreview
+      drawArrow(ctx, startPos.x, startPos.y, targetPos.x, targetPos.y, arrowColor, 'dashed')
     }
   }
 

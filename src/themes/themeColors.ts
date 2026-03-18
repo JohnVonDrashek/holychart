@@ -14,6 +14,7 @@ export interface ThemeColors {
   canvasBoxText: string
   canvasConnection: string
   canvasConnectionPreview: string
+  canvasConnectCandidate: string
   canvasLabelBg: string
   canvasLabelText: string
   canvasLabelTextSecondary: string
@@ -95,6 +96,7 @@ export function getThemeColors(): ThemeColors {
     canvasBoxText: read('--canvas-box-text'),
     canvasConnection: read('--canvas-connection'),
     canvasConnectionPreview: read('--canvas-connection-preview'),
+    canvasConnectCandidate: read('--canvas-connect-candidate'),
     canvasLabelBg: read('--canvas-label-bg'),
     canvasLabelText: read('--canvas-label-text'),
     canvasLabelTextSecondary: read('--canvas-label-text-secondary'),

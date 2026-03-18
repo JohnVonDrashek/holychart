@@ -83,6 +83,7 @@
 
   /* Color picker */
   --color-picker-arrow: rgba(0,0,0,0.45);
+  --canvas-connect-candidate: rgba(5,150,105,0.9);
 
   /* Danger */
   --danger: #f87171;
