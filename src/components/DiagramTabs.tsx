@@ -3,12 +3,14 @@ import { useAppStore, selectResolvedTheme } from '../store/useAppStore'
 import { Tooltip } from './Tooltip'
 
 export function DiagramTabs() {
-  const { diagrams, activeDiagramId, createDiagram, switchDiagram, renameDiagram, deleteDiagram } = useAppStore()
+  const { diagrams, activeDiagramId, createDiagram, switchDiagram, renameDiagram, deleteDiagram, reorderDiagrams } = useAppStore()
   const resolvedTheme = useAppStore(selectResolvedTheme)
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [contextMenu, setContextMenu] = useState<{ id: string; x: number; y: number } | null>(null)
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -43,17 +45,26 @@ export function DiagramTabs() {
         backdropFilter: 'var(--backdrop-blur)',
         zIndex: 40,
         userSelect: 'none',
+        overflowX: 'auto',
+        overflowY: 'hidden',
+        scrollbarWidth: 'none',
       }}
     >
-      {diagrams.map((diagram) => {
+      {diagrams.map((diagram, index) => {
         const isActive = diagram.id === activeDiagramId
         const isEditing = editingId === diagram.id
 
         return (
           <div
             key={diagram.id}
+            draggable={!isEditing}
+            onDragStart={() => setDragIndex(index)}
+            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move' }}
+            onDrop={() => { if (dragIndex !== null && dragIndex !== index) reorderDiagrams(dragIndex, index); setDragIndex(null) }}
+            onDragEnd={() => setDragIndex(null)}
             onClick={() => !isEditing && switchDiagram(diagram.id)}
             onDoubleClick={() => startEdit(diagram.id, diagram.name)}
+            onContextMenu={(e) => { e.preventDefault(); setContextMenu({ id: diagram.id, x: e.clientX, y: e.clientY }) }}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -71,9 +82,13 @@ export function DiagramTabs() {
             }}
             onMouseEnter={(e) => {
               if (!isActive) (e.currentTarget as HTMLDivElement).style.background = 'var(--hover-bg-subtle)'
+              const btn = e.currentTarget.querySelector<HTMLButtonElement>('[data-close-btn]')
+              if (btn) btn.style.opacity = '1'
             }}
             onMouseLeave={(e) => {
               if (!isActive) (e.currentTarget as HTMLDivElement).style.background = 'transparent'
+              const btn = e.currentTarget.querySelector<HTMLButtonElement>('[data-close-btn]')
+              if (btn) btn.style.opacity = '0'
             }}
           >
             {isEditing ? (
@@ -107,6 +122,7 @@ export function DiagramTabs() {
             {diagrams.length > 1 && !isEditing && (
               <Tooltip content="Close diagram">
               <button
+                data-close-btn
                 onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(diagram.id) }}
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer',
@@ -115,8 +131,6 @@ export function DiagramTabs() {
                   transition: 'opacity 0.1s',
                   display: 'flex', alignItems: 'center',
                 }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '1' }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '0' }}
               >
                 ×
               </button>
@@ -145,6 +159,34 @@ export function DiagramTabs() {
       </button>
       </Tooltip>
     </div>
+
+    {contextMenu && <>
+      <div onClick={() => setContextMenu(null)} style={{ position: 'fixed', inset: 0, zIndex: 149 }} />
+      <div style={{
+        position: 'fixed', left: contextMenu.x, top: contextMenu.y,
+        transform: 'translateY(-100%)',
+        zIndex: 150, background: 'var(--surface-overlay)', border: '1px solid var(--border-muted)',
+        borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)',
+        backdropFilter: 'var(--backdrop-blur)', padding: '4px 0', minWidth: 140,
+      }}>
+        {[
+          { label: 'Rename', action: () => { const d = diagrams.find(d => d.id === contextMenu.id); if (d) startEdit(d.id, d.name); setContextMenu(null) } },
+          ...(diagrams.length > 1 ? [{ label: 'Delete', danger: true, action: () => { setConfirmDeleteId(contextMenu.id); setContextMenu(null) } }] : []),
+        ].map((item, i) => (
+          <button key={i} onClick={item.action} style={{
+            display: 'block', width: '100%', textAlign: 'left',
+            background: 'none', border: 'none', cursor: 'pointer',
+            padding: '5px 12px', fontSize: 12, fontFamily: 'var(--font-ui)',
+            color: 'danger' in item && item.danger ? 'var(--danger)' : 'var(--text)',
+          }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--hover-bg-subtle)' }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'none' }}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+    </>}
 
     {confirmDeleteId && <>
       <div onClick={() => setConfirmDeleteId(null)} style={{ position: 'fixed', inset: 0, zIndex: 399 }} />

@@ -162,6 +162,10 @@ export function Toolbar() {
         backdropFilter: 'var(--backdrop-blur)',
         boxShadow: 'var(--shadow-lg)',
         color: 'var(--text)',
+        maxWidth: 'calc(100vw - 24px)',
+        overflowX: 'auto',
+        overflowY: 'hidden',
+        scrollbarWidth: 'none',
       }}
     >
       {/* App name */}
