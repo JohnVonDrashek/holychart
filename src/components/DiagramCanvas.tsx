@@ -555,19 +555,26 @@ export function DiagramCanvas() {
 
     const ctrl = new GestureController(canvas, {
       onGestureDelta: (delta) => {
-        // Touch two-finger pinch with selected elements → resize only, no viewport changes
+        // Touch two-finger pinch inside a selected element → resize, otherwise zoom canvas
         if (delta.isTouch && delta.deltaZoom !== 1 && selectedIdsRef.current.length > 0) {
-          const scale = delta.deltaZoom
-          for (const id of selectedIdsRef.current) {
+          const wp = screenToWorld(delta.originX, delta.originY, vpRef.current)
+          const pinchOnSelected = selectedIdsRef.current.some((id) => {
             const el = elementsRef.current.find((e) => e.id === id)
-            if (!el) continue
-            const cx = el.x + el.width / 2
-            const cy = el.y + el.height / 2
-            const newW = Math.max(20, el.width * scale)
-            const newH = Math.max(20, el.height * scale)
-            updateElement(id, { x: cx - newW / 2, y: cy - newH / 2, width: newW, height: newH })
+            return el && wp.x >= el.x && wp.x <= el.x + el.width && wp.y >= el.y && wp.y <= el.y + el.height
+          })
+          if (pinchOnSelected) {
+            const scale = delta.deltaZoom
+            for (const id of selectedIdsRef.current) {
+              const el = elementsRef.current.find((e) => e.id === id)
+              if (!el) continue
+              const cx = el.x + el.width / 2
+              const cy = el.y + el.height / 2
+              const newW = Math.max(20, el.width * scale)
+              const newH = Math.max(20, el.height * scale)
+              updateElement(id, { x: cx - newW / 2, y: cy - newH / 2, width: newW, height: newH })
+            }
+            return
           }
-          return
         }
         const d = rotationEnabledRef.current ? delta : { ...delta, deltaRotation: 0 }
         setViewport(applyGestureDelta(vpRef.current, d))
