@@ -3,6 +3,7 @@ import { buildViewportMatrix } from './ViewportMatrix'
 import { getIconImage, loadIcon, themeToHex } from '../icons/iconifyClient'
 import { getThemeColors, type ThemeColors } from '../themes/themeColors'
 import { measureTextElement, parseMarkdownLine, segmentFont, measureMarkdownLine, TEXT_PAD_X, TEXT_PAD_Y, TEXT_LINE_H } from './textMetrics'
+import { getCurveOffset, curveControlPoint as connCurveControlPoint, quadBezierEndAngle as connQuadBezierEndAngle, quadBezierPoint as connQuadBezierPoint } from './connectionPath'
 
 const GRID_SIZE = 40
 
@@ -402,10 +403,10 @@ function drawArrow(
   x1: number, y1: number, x2: number, y2: number,
   color: string,
   connStyle: import('../store/types').ConnectionStyle = 'solid',
-  lineWidth = 1.5
+  lineWidth = 1.5,
+  curveOffset = 0
 ) {
   const headLen = 10
-  const angle = Math.atan2(y2 - y1, x2 - x1)
 
   ctx.save()
   ctx.strokeStyle = color
@@ -421,7 +422,15 @@ function drawArrow(
 
   ctx.beginPath()
   ctx.moveTo(x1, y1)
-  ctx.lineTo(x2, y2)
+  let angle: number
+  if (curveOffset !== 0) {
+    const { cx, cy } = connCurveControlPoint(x1, y1, x2, y2, curveOffset)
+    ctx.quadraticCurveTo(cx, cy, x2, y2)
+    angle = connQuadBezierEndAngle(cx, cy, x2, y2)
+  } else {
+    ctx.lineTo(x2, y2)
+    angle = Math.atan2(y2 - y1, x2 - x1)
+  }
   ctx.stroke()
 
   ctx.setLineDash([])
@@ -457,14 +466,25 @@ function drawConnections(
     const to = elMap.get(conn.toId)
     if (!from || !to) continue
 
-    const start = bboxEdgePoint(from, elementCenter(to))
-    const end = bboxEdgePoint(to, elementCenter(from))
+    const offset = getCurveOffset(conn, connections)
+    // For curved connections, aim edge points slightly offset so the curve exits cleanly
+    const fromCenter = elementCenter(from)
+    const toCenter = elementCenter(to)
+    let aimFrom: { x: number; y: number } = toCenter
+    let aimTo: { x: number; y: number } = fromCenter
+    if (offset !== 0) {
+      const cp = connCurveControlPoint(fromCenter.x, fromCenter.y, toCenter.x, toCenter.y, offset)
+      aimFrom = { x: cp.cx, y: cp.cy }
+      aimTo = { x: cp.cx, y: cp.cy }
+    }
+    const start = bboxEdgePoint(from, aimFrom)
+    const end = bboxEdgePoint(to, aimTo)
     const selected = conn.id === selectedConnectionId
     const color = conn.color ?? (selected ? tc.accent : tc.canvasConnection)
 
     // Separator pass — solid white outline beneath colored arrows, always solid regardless of style
     if (conn.color && tc.canvasConnectionSeparator !== 'transparent') {
-      drawArrow(ctx, start.x, start.y, end.x, end.y, tc.canvasConnectionSeparator, 'solid', 6)
+      drawArrow(ctx, start.x, start.y, end.x, end.y, tc.canvasConnectionSeparator, 'solid', 6, offset)
     }
 
     ctx.save()
@@ -472,12 +492,16 @@ function drawConnections(
       ctx.shadowColor = conn.color ?? tc.accent
       ctx.shadowBlur = 10
     }
-    drawArrow(ctx, start.x, start.y, end.x, end.y, color, conn.style ?? 'solid')
+    drawArrow(ctx, start.x, start.y, end.x, end.y, color, conn.style ?? 'solid', 1.5, offset)
     ctx.restore()
 
     if (conn.label) {
-      const mx = (start.x + end.x) / 2
-      const my = (start.y + end.y) / 2
+      // Place label at the midpoint of the curve (t=0.5)
+      const labelPos = offset !== 0
+        ? connQuadBezierPoint(start.x, start.y, connCurveControlPoint(start.x, start.y, end.x, end.y, offset).cx, connCurveControlPoint(start.x, start.y, end.x, end.y, offset).cy, end.x, end.y, 0.5)
+        : { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 }
+      const mx = labelPos.x
+      const my = labelPos.y
       ctx.save()
       ctx.font = `${Math.max(10, fontSize - 2)}px ${tc.fontUi}`
       ctx.textAlign = 'center'

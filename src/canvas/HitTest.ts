@@ -1,5 +1,6 @@
 import type { DiagramElement, ConnectionElement } from '../store/types'
 import { measureTextElement } from './textMetrics'
+import { getCurveOffset, curveControlPoint, distToQuadBezier } from './connectionPath'
 
 function elBounds(el: DiagramElement): { width: number; height: number } {
   if (el.type === 'text') return measureTextElement(el.text, el.fontSize)
@@ -78,10 +79,24 @@ export function hitTestConnection(
     const { width: tw, height: th } = elBounds(to)
     const toC = { x: to.x + tw / 2, y: to.y + th / 2 }
     const fromC = { x: from.x + fw / 2, y: from.y + fh / 2 }
-    // edge points
-    const p1 = bboxEdge(from, toC)
-    const p2 = bboxEdge(to, fromC)
-    if (distToSegment(wx, wy, p1.x, p1.y, p2.x, p2.y) <= threshold) return conn.id
+
+    const offset = getCurveOffset(conn, connections)
+    let aimFrom: { x: number; y: number } = toC
+    let aimTo: { x: number; y: number } = fromC
+    if (offset !== 0) {
+      const cp = curveControlPoint(fromC.x, fromC.y, toC.x, toC.y, offset)
+      aimFrom = { x: cp.cx, y: cp.cy }
+      aimTo = { x: cp.cx, y: cp.cy }
+    }
+    const p1 = bboxEdge(from, aimFrom)
+    const p2 = bboxEdge(to, aimTo)
+
+    if (offset !== 0) {
+      const cp = curveControlPoint(p1.x, p1.y, p2.x, p2.y, offset)
+      if (distToQuadBezier(wx, wy, p1.x, p1.y, cp.cx, cp.cy, p2.x, p2.y) <= threshold) return conn.id
+    } else {
+      if (distToSegment(wx, wy, p1.x, p1.y, p2.x, p2.y) <= threshold) return conn.id
+    }
   }
   return null
 }
