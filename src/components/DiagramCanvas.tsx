@@ -555,19 +555,17 @@ export function DiagramCanvas() {
 
     const ctrl = new GestureController(canvas, {
       onGestureDelta: (delta) => {
-        // Touch two-finger gesture with selected elements → resize only, no viewport changes
-        if (delta.isTouch && selectedIdsRef.current.length > 0 && (delta.deltaZoom !== 1 || delta.deltaPanX !== 0 || delta.deltaPanY !== 0)) {
-          if (delta.deltaZoom !== 1) {
-            const scale = delta.deltaZoom
-            for (const id of selectedIdsRef.current) {
-              const el = elementsRef.current.find((e) => e.id === id)
-              if (!el) continue
-              const cx = el.x + el.width / 2
-              const cy = el.y + el.height / 2
-              const newW = Math.max(20, el.width * scale)
-              const newH = Math.max(20, el.height * scale)
-              updateElement(id, { x: cx - newW / 2, y: cy - newH / 2, width: newW, height: newH })
-            }
+        // Touch two-finger pinch with selected elements → resize only, no viewport changes
+        if (delta.isTouch && delta.deltaZoom !== 1 && selectedIdsRef.current.length > 0) {
+          const scale = delta.deltaZoom
+          for (const id of selectedIdsRef.current) {
+            const el = elementsRef.current.find((e) => e.id === id)
+            if (!el) continue
+            const cx = el.x + el.width / 2
+            const cy = el.y + el.height / 2
+            const newW = Math.max(20, el.width * scale)
+            const newH = Math.max(20, el.height * scale)
+            updateElement(id, { x: cx - newW / 2, y: cy - newH / 2, width: newW, height: newH })
           }
           return
         }
