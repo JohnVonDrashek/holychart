@@ -9,7 +9,8 @@ export function ShortcutsHint() {
   const { toolMode, selectedIds, selectedConnectionId, connectingFromId, isIconSearchOpen, textInputPos, elements, hierarchyMove } = useAppStore()
   const theme = useAppStore(selectResolvedTheme)
 
-  // Don't show when search or text input is open
+  // Don't show on touch/mobile devices or when search/text input is open
+  if ('ontouchstart' in window && window.innerWidth < 1024) return null
   if (isIconSearchOpen || textInputPos) return null
 
   let shortcuts: Shortcut[] = []
