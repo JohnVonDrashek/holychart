@@ -472,7 +472,18 @@ function drawConnections(
     // Compute avoidance offset to route around icon elements
     const fromCenter = elementCenter(from)
     const toCenter = elementCenter(to)
-    const avoidIcons = iconObstacles.filter((e) => e.id !== conn.fromId && e.id !== conn.toId)
+    const fromBounds = elementBounds(from)
+    const toBounds = elementBounds(to)
+    const avoidIcons = iconObstacles.filter((e) => {
+      if (e.id === conn.fromId || e.id === conn.toId) return false
+      // Skip icons that overlap with the from or to element (they're at the endpoints, not in the way)
+      const PAD = 10
+      const overlapsFrom = e.x < from.x + fromBounds.width + PAD && e.x + e.width > from.x - PAD
+        && e.y < from.y + fromBounds.height + PAD && e.y + e.height > from.y - PAD
+      const overlapsTo = e.x < to.x + toBounds.width + PAD && e.x + e.width > to.x - PAD
+        && e.y < to.y + toBounds.height + PAD && e.y + e.height > to.y - PAD
+      return !overlapsFrom && !overlapsTo
+    })
     const avoidOffset = avoidIcons.length > 0
       ? getIconAvoidanceOffset(fromCenter.x, fromCenter.y, toCenter.x, toCenter.y, avoidIcons)
       : 0

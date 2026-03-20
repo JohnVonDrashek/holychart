@@ -16,6 +16,7 @@ export interface GestureDelta {
   originX: number       // CSS pixels, gesture center
   originY: number
   isTouch: boolean      // true when gesture originates from touch input
+  shiftKey?: boolean    // true when shift is held (for element resize on desktop)
 }
 
 export interface GestureCallbacks {
@@ -69,6 +70,8 @@ export class GestureController {
 
   // Space key pan
   private spaceHeld = false
+  // Shift key tracking (for resize gestures)
+  private shiftHeld = false
 
   private canvasRect: DOMRect | null = null
 
@@ -81,6 +84,7 @@ export class GestureController {
   get isPanning() { return this.middlePanPointerId !== null }
   get isSpaceHeld() { return this.spaceHeld }
   get isSpacePanActive() { return this.spaceHeld && this.isDragging }
+  get isShiftHeld() { return this.shiftHeld }
 
   invalidateRect() {
     this.canvasRect = null
@@ -144,12 +148,14 @@ export class GestureController {
         e.preventDefault()
       }
     }
+    if (e.key === 'Shift') this.shiftHeld = true
   }
 
   private onKeyUp = (e: KeyboardEvent) => {
     if (e.code === 'Space') {
       this.spaceHeld = false
     }
+    if (e.key === 'Shift') this.shiftHeld = false
   }
 
   private onPointerDown = (e: PointerEvent) => {
@@ -356,6 +362,7 @@ export class GestureController {
         originX: pos.x,
         originY: pos.y,
         isTouch: false,
+        shiftKey: this.shiftHeld,
       })
     } else {
       // Trackpad two-finger scroll = pan
@@ -396,6 +403,7 @@ export class GestureController {
       originX: pos.x,
       originY: pos.y,
       isTouch: false,
+      shiftKey: this.shiftHeld,
     })
 
     this.lastGestureRotation = ge.rotation

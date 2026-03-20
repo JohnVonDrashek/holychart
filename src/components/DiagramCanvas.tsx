@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react'
 import { useAppStore, selectResolvedTheme } from '../store/useAppStore'
 import { GestureController } from '../canvas/GestureController'
-import { applyGestureDelta, screenToWorld, resetRotation } from '../canvas/ViewportMatrix'
+import { applyGestureDelta, screenToWorld, worldToScreen, resetRotation } from '../canvas/ViewportMatrix'
 import { hitTest, hitTestConnection, elementsInRect } from '../canvas/HitTest'
 import { render } from '../canvas/CanvasRenderer'
 import { loadIcon } from '../icons/iconifyClient'
@@ -45,6 +45,63 @@ function collectContainedIds(seedIds: string[], elements: import('../store/types
     }
   }
   return [...result]
+}
+
+// ── Resize hint overlay (appears near selected element) ──────────────────────
+
+function ResizeHint() {
+  const { selectedIds, elements, viewport, toolMode, connectingFromId, isIconSearchOpen, textInputPos } = useAppStore()
+  const [shiftHeld, setShiftHeld] = useState(false)
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => setShiftHeld(e.shiftKey)
+    window.addEventListener('keydown', onKey)
+    window.addEventListener('keyup', onKey)
+    return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('keyup', onKey) }
+  }, [])
+
+  // Don't show on touch/mobile, or when in special modes
+  if ('ontouchstart' in window && window.innerWidth < 1024) return null
+  if (isIconSearchOpen || textInputPos || connectingFromId || toolMode !== 'select') return null
+  if (selectedIds.length === 0) return null
+
+  const el = elements.find((e) => e.id === selectedIds[0])
+  if (!el || el.type === 'text') return null
+
+  const screenPos = worldToScreen(el.x + el.width / 2, el.y, viewport)
+
+  // Shift icon (⇧) when idle, resize icon (⤡) when shift held
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: screenPos.x,
+        top: screenPos.y - 24,
+        transform: 'translateX(-50%)',
+        zIndex: 30,
+        background: shiftHeld ? 'var(--accent-bg)' : 'var(--surface-glass)',
+        border: `1px solid ${shiftHeld ? 'var(--accent)' : 'var(--border-subtle)'}`,
+        borderRadius: 'var(--radius-sm)',
+        width: 22,
+        height: 22,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        pointerEvents: 'none',
+        backdropFilter: 'var(--backdrop-blur)',
+        transition: 'background 0.15s, border-color 0.15s',
+      }}
+    >
+      <span style={{
+        fontSize: 14,
+        lineHeight: 1,
+        color: shiftHeld ? 'var(--accent-text)' : 'var(--text-muted)',
+        transition: 'color 0.15s',
+      }}>
+        {shiftHeld ? '⤡' : '⇧'}
+      </span>
+    </div>
+  )
 }
 
 // ── Text input overlay ────────────────────────────────────────────────────────
@@ -555,7 +612,23 @@ export function DiagramCanvas() {
 
     const ctrl = new GestureController(canvas, {
       onGestureDelta: (delta) => {
-        // Touch two-finger pinch inside a selected element → resize, otherwise zoom canvas
+        // Pinch-to-resize: touch pinch inside selected element, or Shift+pinch on desktop
+        // Shift+pinch on desktop → always resize selected elements
+        const isDesktopResize = !delta.isTouch && delta.shiftKey && delta.deltaZoom !== 1 && selectedIdsRef.current.length > 0
+        if (isDesktopResize) {
+          const scale = delta.deltaZoom
+          for (const id of selectedIdsRef.current) {
+            const el = elementsRef.current.find((e) => e.id === id)
+            if (!el) continue
+            const cx = el.x + el.width / 2
+            const cy = el.y + el.height / 2
+            const newW = Math.max(20, el.width * scale)
+            const newH = Math.max(20, el.height * scale)
+            updateElement(id, { x: cx - newW / 2, y: cy - newH / 2, width: newW, height: newH })
+          }
+          return
+        }
+        // Touch two-finger pinch inside a selected element → resize
         if (delta.isTouch && delta.deltaZoom !== 1 && selectedIdsRef.current.length > 0) {
           const wp = screenToWorld(delta.originX, delta.originY, vpRef.current)
           const pinchOnSelected = selectedIdsRef.current.some((id) => {
@@ -812,6 +885,7 @@ export function DiagramCanvas() {
         style={{ display: 'block', width: '100%', height: '100%', touchAction: 'none', userSelect: 'none' }}
       />
       <TextInputOverlay />
+      <ResizeHint />
     </>
   )
 }
