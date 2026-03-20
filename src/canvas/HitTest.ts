@@ -1,6 +1,6 @@
 import type { DiagramElement, ConnectionElement } from '../store/types'
 import { measureTextElement } from './textMetrics'
-import { getCurveOffset, curveControlPoint, distToQuadBezier } from './connectionPath'
+import { getCurveOffset, getIconAvoidanceOffset, curveControlPoint, distToQuadBezier } from './connectionPath'
 
 function elBounds(el: DiagramElement): { width: number; height: number } {
   if (el.type === 'text') return measureTextElement(el.text, el.fontSize)
@@ -80,7 +80,21 @@ export function hitTestConnection(
     const toC = { x: to.x + tw / 2, y: to.y + th / 2 }
     const fromC = { x: from.x + fw / 2, y: from.y + fh / 2 }
 
-    const offset = getCurveOffset(conn, connections)
+    const biOffset = getCurveOffset(conn, connections)
+    // Include icon avoidance offset (same logic as renderer)
+    const avoidIcons = elements.filter((e) => e.type === 'icon' && e.id !== conn.fromId && e.id !== conn.toId)
+      .filter((e) => {
+        const PAD = 10
+        const overlapsFrom = e.x < from.x + fw + PAD && e.x + e.width > from.x - PAD
+          && e.y < from.y + fh + PAD && e.y + e.height > from.y - PAD
+        const overlapsTo = e.x < to.x + tw + PAD && e.x + e.width > to.x - PAD
+          && e.y < to.y + th + PAD && e.y + e.height > to.y - PAD
+        return !overlapsFrom && !overlapsTo
+      })
+    const avoidOffset = avoidIcons.length > 0
+      ? getIconAvoidanceOffset(fromC.x, fromC.y, toC.x, toC.y, avoidIcons)
+      : 0
+    const offset = biOffset + avoidOffset
     let aimFrom: { x: number; y: number } = toC
     let aimTo: { x: number; y: number } = fromC
     if (offset !== 0) {

@@ -473,6 +473,8 @@ function drawConnections(
   const elMap = new Map(elements.map((e) => [e.id, e]))
   // Collect icon elements for avoidance routing
   const iconObstacles = elements.filter((e) => e.type === 'icon')
+  // Collect labels for deferred drawing (allows overlap detection)
+  const pendingLabels: { connId: string; fromId: string; toId: string; text: string; x: number; y: number; hw: number; hh: number; color: string }[] = []
 
   for (const conn of connections) {
     const from = elMap.get(conn.fromId)
@@ -526,38 +528,82 @@ function drawConnections(
     ctx.restore()
 
     if (conn.label) {
-      // For bidirectional connections, shift labels apart so they don't overlap.
-      // Both connections use t=0.33 (closer to their own start), which places them
-      // on opposite ends since A→B and B→A travel in opposite directions.
-      const labelT = biOffset !== 0 ? 0.33 : 0.5
+      // Compute label position at midpoint of curve
       const labelPos = offset !== 0
-        ? connQuadBezierPoint(start.x, start.y, connCurveControlPoint(start.x, start.y, end.x, end.y, offset).cx, connCurveControlPoint(start.x, start.y, end.x, end.y, offset).cy, end.x, end.y, labelT)
-        : { x: start.x + (end.x - start.x) * labelT, y: start.y + (end.y - start.y) * labelT }
-      const mx = labelPos.x
-      const my = labelPos.y
+        ? connQuadBezierPoint(start.x, start.y, connCurveControlPoint(start.x, start.y, end.x, end.y, offset).cx, connCurveControlPoint(start.x, start.y, end.x, end.y, offset).cy, end.x, end.y, 0.5)
+        : { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 }
+
       ctx.save()
       ctx.font = `${Math.max(10, fontSize - 2)}px ${tc.fontUi}`
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
       const tw = ctx.measureText(conn.label).width
-      // Background behind label for readability
-      const labelBg = (tc.canvasLabelBg && tc.canvasLabelBg !== 'transparent')
-        ? tc.canvasLabelBg
-        : (tc.canvasTextBg !== 'transparent' ? tc.canvasTextBg : null)
-      if (labelBg) {
-        const labelFontSize = Math.max(10, fontSize - 2)
-        const th = labelFontSize * 1.2
-        const px = 8
-        const py = 4
-        ctx.fillStyle = labelBg
-        ctx.beginPath()
-        ctx.roundRect(mx - tw / 2 - px, my - th / 2 - py, tw + px * 2, th + py * 2, tc.radiusSm)
-        ctx.fill()
-      }
-      ctx.fillStyle = resolvedConn ?? tc.canvasLabelText
-      ctx.fillText(conn.label, mx, my)
+      const labelFontSize = Math.max(10, fontSize - 2)
+      const th = labelFontSize * 1.2
+      const px = 8
+      const py = 4
+
+      pendingLabels.push({
+        connId: conn.id,
+        fromId: conn.fromId,
+        toId: conn.toId,
+        text: conn.label,
+        x: labelPos.x,
+        y: labelPos.y,
+        hw: tw / 2 + px,  // half-width of label box
+        hh: th / 2 + py,  // half-height of label box
+        color: resolvedConn ?? tc.canvasLabelText,
+      })
       ctx.restore()
     }
+  }
+
+  // Push apart overlapping labels on bidirectional connections
+  for (let i = 0; i < pendingLabels.length; i++) {
+    for (let j = i + 1; j < pendingLabels.length; j++) {
+      const a = pendingLabels[i]
+      const b = pendingLabels[j]
+      // Only push apart labels that share the same two elements (bidirectional)
+      const isBiPair = (a.fromId === b.toId && a.toId === b.fromId)
+      if (!isBiPair) continue
+
+      // Check if bounding boxes overlap
+      const overlapX = a.hw + b.hw - Math.abs(a.x - b.x)
+      const overlapY = a.hh + b.hh - Math.abs(a.y - b.y)
+      if (overlapX <= 0 || overlapY <= 0) continue
+
+      // Push apart by the minimum amount to clear the overlap
+      const GAP = 4
+      if (overlapX < overlapY) {
+        // Less overlap horizontally — push apart on X axis
+        const push = (overlapX + GAP) / 2
+        if (a.x <= b.x) { a.x -= push; b.x += push }
+        else { a.x += push; b.x -= push }
+      } else {
+        // Less overlap vertically — push apart on Y axis
+        const push = (overlapY + GAP) / 2
+        if (a.y <= b.y) { a.y -= push; b.y += push }
+        else { a.y += push; b.y -= push }
+      }
+    }
+  }
+
+  // Draw all labels
+  for (const label of pendingLabels) {
+    ctx.save()
+    ctx.font = `${Math.max(10, fontSize - 2)}px ${tc.fontUi}`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    const labelBg = (tc.canvasLabelBg && tc.canvasLabelBg !== 'transparent')
+      ? tc.canvasLabelBg
+      : (tc.canvasTextBg !== 'transparent' ? tc.canvasTextBg : null)
+    if (labelBg) {
+      ctx.fillStyle = labelBg
+      ctx.beginPath()
+      ctx.roundRect(label.x - label.hw, label.y - label.hh, label.hw * 2, label.hh * 2, tc.radiusSm)
+      ctx.fill()
+    }
+    ctx.fillStyle = label.color
+    ctx.fillText(label.text, label.x, label.y)
+    ctx.restore()
   }
 }
 
