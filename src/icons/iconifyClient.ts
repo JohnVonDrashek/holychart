@@ -3,10 +3,13 @@ import { BAKED_ICONS } from './bakedIcons'
 // Cache keyed by "iconName|#hexcolor"
 const imageCache = new Map<string, HTMLImageElement | Promise<HTMLImageElement>>()
 
+// Tracks the most recently *requested* image per icon name for fallback display.
+// Updated when a load completes, but only if it matches the latest requested color.
+const latestRequested = new Map<string, string>() // iconName → hex
+const latestImage = new Map<string, HTMLImageElement>() // iconName → most recent completed image
+
 export function themeToHex(theme: string): string {
-  // If it's already a hex color, use it directly
   if (theme.startsWith('#')) return theme
-  // Otherwise it's a theme name — read the current --text CSS variable
   return getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#e2e8f0'
 }
 
@@ -56,22 +59,42 @@ export function loadIcon(
   const hex = themeToHex(colorOrTheme)
   const key = cacheKey(iconName, hex)
 
+  // Mark this as the latest requested color for this icon
+  latestRequested.set(iconName, hex)
+
   if (imageCache.has(key)) {
     const cached = imageCache.get(key)!
-    if (!(cached instanceof HTMLImageElement)) cached.then(() => onLoad?.()).catch(() => {})
-    else onLoad?.()
+    if (cached instanceof HTMLImageElement) {
+      // Already loaded — update latest image immediately
+      latestImage.set(iconName, cached)
+      onLoad?.()
+    } else {
+      cached.then(() => onLoad?.()).catch(() => {})
+    }
     return
   }
 
   const promise = iconToImage(iconName, hex)
   imageCache.set(key, promise)
   promise
-    .then((img) => { imageCache.set(key, img); onLoad?.() })
+    .then((img) => {
+      imageCache.set(key, img)
+      // Only update latestImage if this is still the most recently requested color
+      // (avoids out-of-order async loads showing stale intermediate colors)
+      if (latestRequested.get(iconName) === hex) {
+        latestImage.set(iconName, img)
+      }
+      onLoad?.()
+    })
     .catch(() => { imageCache.delete(key) })
 }
 
-/** Get a cached icon image synchronously. Returns null if not yet loaded. */
+/** Get a cached icon image synchronously. Returns null if not yet loaded.
+ *  Falls back to the most recently loaded variant to avoid placeholder flash. */
 export function getIconImage(iconName: string, colorOrTheme: string): HTMLImageElement | null {
   const cached = imageCache.get(cacheKey(iconName, themeToHex(colorOrTheme)))
-  return cached instanceof HTMLImageElement ? cached : null
+  if (cached instanceof HTMLImageElement) return cached
+
+  // Fallback: show the most recently loaded variant of this icon
+  return latestImage.get(iconName) ?? null
 }

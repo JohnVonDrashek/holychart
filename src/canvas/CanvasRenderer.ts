@@ -4,8 +4,15 @@ import { getIconImage, loadIcon, themeToHex } from '../icons/iconifyClient'
 import { getThemeColors, type ThemeColors } from '../themes/themeColors'
 import { measureTextElement, parseMarkdownLine, segmentFont, measureMarkdownLine, TEXT_PAD_X, TEXT_PAD_Y, TEXT_LINE_H } from './textMetrics'
 import { getCurveOffset, getIconAvoidanceOffset, curveControlPoint as connCurveControlPoint, quadBezierEndAngle as connQuadBezierEndAngle, quadBezierPoint as connQuadBezierPoint } from './connectionPath'
+import { resolveColorForBackground } from '../themes/colorNames'
 
 const GRID_SIZE = 40
+
+/** Resolve an element/connection color against the canvas background for visibility. */
+function resolveColor(color: string | undefined, tc: ThemeColors): string | undefined {
+  if (!color) return undefined
+  return resolveColorForBackground(color, tc.canvasBg)
+}
 
 function drawGrid(ctx: CanvasRenderingContext2D, vp: ViewportState, cssW: number, cssH: number, tc: ThemeColors) {
   const matrix = buildViewportMatrix(vp)
@@ -69,7 +76,10 @@ function drawIconElement(
   fontSize: number,
   tc: ThemeColors
 ) {
-  const colorKey = el.color ?? theme
+  const resolved = resolveColor(el.color, tc)
+  const colorKey = resolved ?? theme
+  // Always ensure the correct color variant is loading
+  loadIcon(el.iconName, colorKey)
   const img = getIconImage(el.iconName, colorKey)
 
   // Unified backing card — one shape covering icon + label together
@@ -93,7 +103,6 @@ function drawIconElement(
   if (img) {
     ctx.drawImage(img, el.x, el.y, el.width, el.height)
   } else {
-    loadIcon(el.iconName, colorKey)
     ctx.fillStyle = tc.canvasPlaceholderFill
     ctx.strokeStyle = tc.canvasPlaceholderStroke
     ctx.lineWidth = 1.5
@@ -116,7 +125,7 @@ function drawIconElement(
     ctx.textAlign = 'center'
     ctx.textBaseline = 'top'
     // No separate label backing needed — unified card above covers it
-    ctx.fillStyle = el.color ?? tc.canvasLabelText
+    ctx.fillStyle = resolved ?? tc.canvasLabelText
     ctx.fillText(el.label, el.x + el.width / 2, el.y + el.height + 4)
   }
 
@@ -153,8 +162,9 @@ function drawBoxElement(
   tc: ThemeColors
 ) {
   const boxStyle = el.style ?? 'solid'
-  const glowColor = el.color ?? tc.canvasBoxGlow
-  const strokeColor = el.color ?? tc.canvasBoxStroke
+  const resolved = resolveColor(el.color, tc)
+  const glowColor = resolved ?? tc.canvasBoxGlow
+  const strokeColor = resolved ?? tc.canvasBoxStroke
 
   const needsSolidFill = tc.canvasTextBg !== 'transparent'
   const lw = tc.canvasStrokeWidth
@@ -177,16 +187,16 @@ function drawBoxElement(
 
   if (boxStyle === 'filled') {
     // Base fill
-    const baseAlpha = el.color ? tc.canvasBoxColorFilledAlpha : tc.canvasBoxFilledBaseAlpha
+    const baseAlpha = resolved ? tc.canvasBoxColorFilledAlpha : tc.canvasBoxFilledBaseAlpha
     if (baseAlpha > 0) {
       ctx.globalAlpha = baseAlpha
-      ctx.fillStyle = el.color ?? tc.canvasBoxFill
+      ctx.fillStyle = resolved ?? tc.canvasBoxFill
       ctx.fill()
       ctx.globalAlpha = 1
     }
     // Gradient overlay
     if (tc.canvasBoxGradientStops) {
-      const gradAlpha = el.color ? tc.canvasBoxColorGradientAlpha : tc.canvasBoxGradientAlpha
+      const gradAlpha = resolved ? tc.canvasBoxColorGradientAlpha : tc.canvasBoxGradientAlpha
       if (gradAlpha > 0) {
         const grad = ctx.createLinearGradient(el.x, el.y, el.x, el.y + el.height)
         for (const [offset, color] of tc.canvasBoxGradientStops) grad.addColorStop(offset, color)
@@ -198,10 +208,10 @@ function drawBoxElement(
     }
   } else {
     // Solid/dashed: tint only
-    const tintAlpha = el.color ? tc.canvasBoxColorTintAlpha : tc.canvasBoxSolidTintAlpha
+    const tintAlpha = resolved ? tc.canvasBoxColorTintAlpha : tc.canvasBoxSolidTintAlpha
     if (tintAlpha > 0) {
       ctx.globalAlpha = tintAlpha
-      ctx.fillStyle = el.color ?? tc.canvasBoxFill
+      ctx.fillStyle = resolved ?? tc.canvasBoxFill
       ctx.fill()
       ctx.globalAlpha = 1
     }
@@ -217,7 +227,7 @@ function drawBoxElement(
   }
 
   // Separator ring — drawn before shadow is set so it stays clean
-  if (el.color && tc.canvasBoxSeparator !== 'transparent') {
+  if (resolved && tc.canvasBoxSeparator !== 'transparent') {
     const sep = 2
     ctx.beginPath()
     ctx.roundRect(el.x - sep, el.y - sep, el.width + sep * 2, el.height + sep * 2, tc.radiusLg + sep)
@@ -230,12 +240,12 @@ function drawBoxElement(
   // Glow shadow on the colored stroke only
   if (tc.canvasGlowBlur > 0) {
     ctx.shadowColor = glowColor
-    ctx.shadowBlur = el.color ? tc.canvasGlowBlur * 2.3 : tc.canvasGlowBlur
+    ctx.shadowBlur = resolved ? tc.canvasGlowBlur * 2.3 : tc.canvasGlowBlur
   }
 
   // Colored stroke
   strokePath()
-  ctx.strokeStyle = el.color ?? strokeColor
+  ctx.strokeStyle = resolved ?? strokeColor
   ctx.lineWidth = lw
   ctx.setLineDash(boxStyle === 'dashed' ? [6, 4] : [])
   ctx.stroke()
@@ -297,7 +307,8 @@ function drawTextElement(
   ctx.fill()
 
   // Card border
-  ctx.strokeStyle = el.color ?? tc.canvasBoxStroke
+  const resolved = resolveColor(el.color, tc)
+  ctx.strokeStyle = resolved ?? tc.canvasBoxStroke
   ctx.lineWidth = tc.canvasStrokeWidth
   ctx.beginPath()
   ctx.roundRect(el.x, el.y, w, h, tc.radiusMd)
@@ -311,7 +322,7 @@ function drawTextElement(
     const yPos = el.y + TEXT_PAD_Y + i * lineH
     for (const seg of segs) {
       ctx.font = segmentFont(seg, fontSize, tc.fontUi)
-      ctx.fillStyle = el.color ?? tc.canvasLabelText
+      ctx.fillStyle = resolved ?? tc.canvasLabelText
       ctx.fillText(seg.text, xPos, yPos)
       xPos += ctx.measureText(seg.text).width
     }
@@ -498,16 +509,17 @@ function drawConnections(
     const start = bboxEdgePoint(from, aimFrom)
     const end = bboxEdgePoint(to, aimTo)
     const selected = conn.id === selectedConnectionId
-    const color = conn.color ?? (selected ? tc.accent : tc.canvasConnection)
+    const resolvedConn = resolveColor(conn.color, tc)
+    const color = resolvedConn ?? (selected ? tc.accent : tc.canvasConnection)
 
     // Separator pass — solid white outline beneath colored arrows, always solid regardless of style
-    if (conn.color && tc.canvasConnectionSeparator !== 'transparent') {
+    if (resolvedConn && tc.canvasConnectionSeparator !== 'transparent') {
       drawArrow(ctx, start.x, start.y, end.x, end.y, tc.canvasConnectionSeparator, 'solid', 6, offset)
     }
 
     ctx.save()
     if (selected && tc.canvasGlowBlur > 0) {
-      ctx.shadowColor = conn.color ?? tc.accent
+      ctx.shadowColor = resolvedConn ?? tc.accent
       ctx.shadowBlur = 10
     }
     drawArrow(ctx, start.x, start.y, end.x, end.y, color, conn.style ?? 'solid', 1.5, offset)
@@ -539,7 +551,7 @@ function drawConnections(
         ctx.roundRect(mx - tw / 2 - px, my - th / 2 - py, tw + px * 2, th + py * 2, tc.radiusSm)
         ctx.fill()
       }
-      ctx.fillStyle = conn.color ?? tc.canvasLabelText
+      ctx.fillStyle = resolvedConn ?? tc.canvasLabelText
       ctx.fillText(conn.label, mx, my)
       ctx.restore()
     }

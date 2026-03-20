@@ -15,3 +15,5 @@ export const THEMES = ['dark', 'light'] as const
 
 export type ResolvedTheme = (typeof THEMES)[number]
 export type Theme = ResolvedTheme | 'system'
+
+export { NAMED_COLORS, nearestNamedColor, colorName, luminance, colorsTooClose, resolveColorForBackground } from './colorNames'

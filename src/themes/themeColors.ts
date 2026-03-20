@@ -6,6 +6,7 @@
 
 export interface ThemeColors {
   // Canvas
+  canvasBg: string
   canvasGrid: string
   canvasGridAccent: string
   canvasBoxStroke: string
@@ -88,6 +89,7 @@ export function getThemeColors(): ThemeColors {
   if (_cached && _cachedTheme === current) return _cached
 
   _cached = {
+    canvasBg: read('--bg'),
     canvasGrid: read('--canvas-grid'),
     canvasGridAccent: read('--canvas-grid-accent'),
     canvasBoxStroke: read('--canvas-box-stroke'),
