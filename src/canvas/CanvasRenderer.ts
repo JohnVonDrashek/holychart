@@ -468,18 +468,23 @@ function drawConnections(
   selectedConnectionId: string | null,
   _theme: string,
   fontSize: number,
-  tc: ThemeColors
+  tc: ThemeColors,
+  connectedConnectionIds: Set<string> | null = null
 ) {
   const elMap = new Map(elements.map((e) => [e.id, e]))
   // Collect icon elements for avoidance routing
   const iconObstacles = elements.filter((e) => e.type === 'icon')
   // Collect labels for deferred drawing (allows overlap detection)
-  const pendingLabels: { connId: string; fromId: string; toId: string; text: string; x: number; y: number; hw: number; hh: number; color: string }[] = []
+  const pendingLabels: { connId: string; fromId: string; toId: string; text: string; x: number; y: number; hw: number; hh: number; color: string; dimmed: boolean }[] = []
+
+  const DIM_ALPHA = 0.25
 
   for (const conn of connections) {
     const from = elMap.get(conn.fromId)
     const to = elMap.get(conn.toId)
     if (!from || !to) continue
+
+    const dimmed = connectedConnectionIds !== null && !connectedConnectionIds.has(conn.id)
 
     const biOffset = getCurveOffset(conn, connections)
     // Compute avoidance offset to route around icon elements
@@ -526,10 +531,14 @@ function drawConnections(
 
     // Separator pass — solid white outline beneath colored arrows, always solid regardless of style
     if (resolvedConn && tc.canvasConnectionSeparator !== 'transparent') {
+      ctx.save()
+      if (dimmed) ctx.globalAlpha = DIM_ALPHA
       drawArrow(ctx, start.x, start.y, end.x, end.y, tc.canvasConnectionSeparator, 'solid', 6, offset)
+      ctx.restore()
     }
 
     ctx.save()
+    if (dimmed) ctx.globalAlpha = DIM_ALPHA
     if (selected && tc.canvasGlowBlur > 0) {
       ctx.shadowColor = resolvedConn ?? tc.accent
       ctx.shadowBlur = 10
@@ -561,6 +570,7 @@ function drawConnections(
         hw: tw / 2 + px,  // half-width of label box
         hh: th / 2 + py,  // half-height of label box
         color: resolvedConn ?? tc.canvasLabelText,
+        dimmed,
       })
       ctx.restore()
     }
@@ -599,6 +609,7 @@ function drawConnections(
   // Draw all labels
   for (const label of pendingLabels) {
     ctx.save()
+    if (label.dimmed) ctx.globalAlpha = DIM_ALPHA
     ctx.font = `${Math.max(10, fontSize - 2)}px ${tc.fontUi}`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
@@ -704,6 +715,24 @@ export function render(
 
   // Draw elements first, then connections on top
   const selectedIdSet = new Set(selectedIds)
+
+  // Compute the set of element IDs connected to the selection (for dim effect)
+  let connectedIdSet: Set<string> | null = null
+  let connectedConnectionIds: Set<string> | null = null
+  if (selectedIds.length > 0) {
+    connectedIdSet = new Set(selectedIds)
+    connectedConnectionIds = new Set<string>()
+    for (const conn of connections) {
+      if (selectedIdSet.has(conn.fromId) || selectedIdSet.has(conn.toId)) {
+        connectedIdSet.add(conn.fromId)
+        connectedIdSet.add(conn.toId)
+        connectedConnectionIds.add(conn.id)
+      }
+    }
+  }
+
+  const DIM_ALPHA = 0.25
+
   const sorted = [...elements].sort((a, b) => {
     const aSelected = selectedIdSet.has(a.id) ? 1 : 0
     const bSelected = selectedIdSet.has(b.id) ? 1 : 0
@@ -712,6 +741,10 @@ export function render(
 
   for (const el of sorted) {
     ctx.save()
+    // Dim elements not connected to the selection
+    if (connectedIdSet && !connectedIdSet.has(el.id)) {
+      ctx.globalAlpha = DIM_ALPHA
+    }
     const sel = selectedIds.includes(el.id)
     const showHandles = sel && selectedIds.length === 1
     if (el.type === 'icon') {
@@ -724,7 +757,7 @@ export function render(
     ctx.restore()
   }
 
-  drawConnections(ctx, connections, elements, selectedConnectionId, theme, defaultFontSize, tc)
+  drawConnections(ctx, connections, elements, selectedConnectionId, theme, defaultFontSize, tc, connectedConnectionIds)
 
   // Highlight connect candidate with connection-preview color outline
   if (connectCandidateId) {
