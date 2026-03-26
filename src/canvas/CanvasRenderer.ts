@@ -172,6 +172,7 @@ function drawBoxElement(
   const lw = tc.canvasStrokeWidth
 
   ctx.save()
+  const parentAlpha = ctx.globalAlpha
   ctx.beginPath()
   ctx.roundRect(el.x, el.y, el.width, el.height, tc.radiusLg)
 
@@ -191,10 +192,10 @@ function drawBoxElement(
     // Base fill
     const baseAlpha = resolved ? tc.canvasBoxColorFilledAlpha : tc.canvasBoxFilledBaseAlpha
     if (baseAlpha > 0) {
-      ctx.globalAlpha = baseAlpha
+      ctx.globalAlpha = baseAlpha * parentAlpha
       ctx.fillStyle = resolved ?? tc.canvasBoxFill
       ctx.fill()
-      ctx.globalAlpha = 1
+      ctx.globalAlpha = parentAlpha
     }
     // Gradient overlay
     if (tc.canvasBoxGradientStops) {
@@ -202,20 +203,20 @@ function drawBoxElement(
       if (gradAlpha > 0) {
         const grad = ctx.createLinearGradient(el.x, el.y, el.x, el.y + el.height)
         for (const [offset, color] of tc.canvasBoxGradientStops) grad.addColorStop(offset, color)
-        ctx.globalAlpha = gradAlpha
+        ctx.globalAlpha = gradAlpha * parentAlpha
         ctx.fillStyle = grad
         ctx.fill()
-        ctx.globalAlpha = 1
+        ctx.globalAlpha = parentAlpha
       }
     }
   } else {
     // Solid/dashed: tint only
     const tintAlpha = resolved ? tc.canvasBoxColorTintAlpha : tc.canvasBoxSolidTintAlpha
     if (tintAlpha > 0) {
-      ctx.globalAlpha = tintAlpha
+      ctx.globalAlpha = tintAlpha * parentAlpha
       ctx.fillStyle = resolved ?? tc.canvasBoxFill
       ctx.fill()
-      ctx.globalAlpha = 1
+      ctx.globalAlpha = parentAlpha
     }
   }
 
