@@ -162,7 +162,7 @@ export function DiagramCanvas() {
     deleteElement, deleteSelected, deleteConnection, updateConnection,
     openIconSearch, openTextInput, closeTextInput,
     startConnecting, finishConnecting, cancelConnecting, setConnectionPreviewPos,
-    openConnectCreateMenu, setPendingConnectionFrom, cyclePendingConnectionStyle,
+    openConnectCreateMenu, setPendingConnectionFrom, cyclePendingConnectionStyle, openConnectionStyleMenu,
     pushHistory,
     connectingFromId, connectionPreviewPos,
     copySelected, paste, pasteAt, clipboard,
@@ -379,7 +379,8 @@ export function DiagramCanvas() {
       if ((e.key === 's' || e.key === 'S') && !e.metaKey && !e.ctrlKey) {
         if (connectingFromIdRef.current) {
           e.preventDefault()
-          cyclePendingConnectionStyle()
+          const { x, y } = cursorPosRef.current
+          openConnectionStyleMenu(x, y, null)
           return
         }
         const primaryId = selectedIdsRef.current[0]
@@ -403,12 +404,8 @@ export function DiagramCanvas() {
         }
         if (selectedConnectionIdRef.current) {
           e.preventDefault()
-          const conn = connectionsRef.current.find((c) => c.id === selectedConnectionIdRef.current)
-          if (conn) {
-            const styles = ['solid', 'dashed', 'animated'] as const
-            const next = styles[(styles.indexOf(conn.style ?? 'solid') + 1) % styles.length]
-            updateConnection(selectedConnectionIdRef.current, { style: next })
-          }
+          const { x, y } = cursorPosRef.current
+          openConnectionStyleMenu(x, y, selectedConnectionIdRef.current)
         }
         return
       }
@@ -497,7 +494,7 @@ export function DiagramCanvas() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [deleteElement, deleteSelected, deleteConnection, updateConnection, openIconSearch, openTextInput, closeTextInput, setSelected, setViewport, startConnecting, cancelConnecting, copySelected, paste, pasteAt, openColorPicker, closeColorPicker, openRename, closeRename, pushHistory, closeContextMenu, openConnectCreateMenu, setPendingConnectionFrom, addElement, cyclePendingConnectionStyle])
+  }, [deleteElement, deleteSelected, deleteConnection, updateConnection, openIconSearch, openTextInput, closeTextInput, setSelected, setViewport, startConnecting, cancelConnecting, copySelected, paste, pasteAt, openColorPicker, closeColorPicker, openRename, closeRename, pushHistory, closeContextMenu, openConnectCreateMenu, setPendingConnectionFrom, addElement, cyclePendingConnectionStyle, openConnectionStyleMenu])
 
   // Re-evaluate cursor whenever mode changes (box placement, tool mode)
   useEffect(() => {

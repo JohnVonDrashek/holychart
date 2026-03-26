@@ -136,6 +136,12 @@ export class GestureController {
   }
 
   private onKeyDown = (e: KeyboardEvent) => {
+    // Prevent browser zoom via Ctrl/Cmd +/-/0
+    if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+' || e.key === '-' || e.key === '0')) {
+      e.preventDefault()
+      return
+    }
+
     if (e.code === 'Space' && !e.repeat) {
       // Only engage space-pan if not in an input or rich-text editor
       const target = e.target as HTMLElement

@@ -20,7 +20,7 @@ export function ShortcutsHint() {
     modeLabel = 'Connection selected'
     shortcuts = [
       { keys: ['D'], description: 'Reverse direction' },
-      { keys: ['S'], description: 'Cycle style (solid/dashed/animated)' },
+      { keys: ['S'], description: 'Line style' },
       { keys: ['C'], description: 'Change color' },
       { keys: ['R'], description: 'Edit label' },
       { keys: ['⌫'], description: 'Delete' },
@@ -33,7 +33,7 @@ export function ShortcutsHint() {
       { keys: ['Q'], description: 'Create icon + connect' },
       { keys: ['W'], description: 'Create text + connect' },
       { keys: ['B'], description: 'Create box + connect' },
-      { keys: ['S'], description: 'Cycle line style' },
+      { keys: ['S'], description: 'Line style' },
       { keys: ['Esc'], description: 'Cancel' },
     ]
   } else if (toolMode === 'text') {

@@ -92,6 +92,7 @@ const EPHEMERAL_RESET = {
   isEyedropperActive: false,
   renamingId: null,
   history: [] as HistoryEntry[],
+  connectionStyleMenuPos: null as { screenX: number; screenY: number; connectionId: ElementId | null } | null,
   contextMenuPos: null as { x: number; y: number } | null,
 }
 
@@ -131,6 +132,7 @@ interface AppState {
   pendingConnectionStyle: ConnectionStyle
   connectCreateMenuPos: { screenX: number; screenY: number; worldX: number; worldY: number; fromId?: ElementId } | null
   elementActionMenuPos: { screenX: number; screenY: number; elementId: ElementId } | null
+  connectionStyleMenuPos: { screenX: number; screenY: number; connectionId: ElementId | null } | null
   history: HistoryEntry[]
   contextMenuPos: { x: number; y: number } | null
 
@@ -186,6 +188,8 @@ interface AppState {
   closeConnectCreateMenu: () => void
   openElementActionMenu: (screenX: number, screenY: number, elementId: ElementId) => void
   closeElementActionMenu: () => void
+  openConnectionStyleMenu: (screenX: number, screenY: number, connectionId: ElementId | null) => void
+  closeConnectionStyleMenu: () => void
   // Connections
   addConnection: (c: ConnectionElement) => void
   deleteConnection: (id: ElementId) => void
@@ -194,6 +198,7 @@ interface AppState {
   finishConnecting: (toId: ElementId) => void
   cancelConnecting: () => void
   cyclePendingConnectionStyle: () => void
+  setPendingConnectionStyle: (style: ConnectionStyle) => void
   setConnectionPreviewPos: (pos: { x: number; y: number } | null) => void
 }
 
@@ -239,6 +244,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   pendingConnectionStyle: 'solid' as ConnectionStyle,
   connectCreateMenuPos: null,
   elementActionMenuPos: null,
+  connectionStyleMenuPos: null,
   history: [],
   contextMenuPos: null,
 
@@ -504,6 +510,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const next = styles[(styles.indexOf(s.pendingConnectionStyle) + 1) % styles.length]
     return { pendingConnectionStyle: next }
   }),
+  setPendingConnectionStyle: (style) => set({ pendingConnectionStyle: style }),
   setPendingConnectionFrom: (id) => set({ pendingConnectionFrom: id }),
   openConnectCreateMenu: (screenX, screenY, worldX, worldY) =>
     set((s) => ({
@@ -518,6 +525,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   openElementActionMenu: (screenX, screenY, elementId) =>
     set({ elementActionMenuPos: { screenX, screenY, elementId } }),
   closeElementActionMenu: () => set({ elementActionMenuPos: null }),
+  openConnectionStyleMenu: (screenX, screenY, connectionId) =>
+    set({ connectionStyleMenuPos: { screenX, screenY, connectionId } }),
+  closeConnectionStyleMenu: () => set({ connectionStyleMenuPos: null }),
 }))
 
 // ── Auto-save (module-level, debounced) ───────────────────────────────────────
