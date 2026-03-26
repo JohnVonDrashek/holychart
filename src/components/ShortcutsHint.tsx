@@ -68,6 +68,7 @@ export function ShortcutsHint() {
       { keys: ['Q'], description: 'Add icon' },
       { keys: ['W'], description: 'Add text' },
       { keys: ['B'], description: 'Add box' },
+      { keys: ['L'], description: 'Line routing' },
       { keys: ['H'], description: hierarchyMove ? 'Hierarchy move: on' : 'Hierarchy move: off' },
       { keys: ['scroll'], description: 'Pan' },
       { keys: ['pinch'], description: 'Zoom' },

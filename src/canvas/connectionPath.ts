@@ -100,7 +100,6 @@ export function distToQuadBezier(
 
 /**
  * Checks if a quadratic bezier curve passes through an obstacle's bounding box.
- * Samples the curve at multiple points for intersection testing.
  */
 function curveHitsRect(
   x1: number, y1: number,
@@ -233,4 +232,99 @@ export function getIconAvoidanceOffset(
   }
 
   return currentOffset
+}
+
+// ── Smooth cubic curve routing ─────────────────────────────────────────────────
+
+/**
+ * Compute cubic bezier control points for smooth curve routing.
+ * Control points extend along the dominant axis for a natural-looking curve.
+ */
+export function smoothCurveControlPoints(
+  x1: number, y1: number,
+  x2: number, y2: number,
+  offset: number
+): { cp1x: number; cp1y: number; cp2x: number; cp2y: number } {
+  const dx = x2 - x1
+  const dy = y2 - y1
+  const dist = Math.hypot(dx, dy)
+  const tension = Math.min(dist * 0.4, 100)
+
+  let cp1x: number, cp1y: number, cp2x: number, cp2y: number
+
+  if (Math.abs(dx) >= Math.abs(dy)) {
+    const dir = dx >= 0 ? 1 : -1
+    cp1x = x1 + dir * tension
+    cp1y = y1
+    cp2x = x2 - dir * tension
+    cp2y = y2
+  } else {
+    const dir = dy >= 0 ? 1 : -1
+    cp1x = x1
+    cp1y = y1 + dir * tension
+    cp2x = x2
+    cp2y = y2 - dir * tension
+  }
+
+  // Apply perpendicular offset for bidirectional separation
+  if (offset !== 0 && dist > 0) {
+    let ndx = dx, ndy = dy
+    if (x1 > x2 || (x1 === x2 && y1 > y2)) { ndx = -ndx; ndy = -ndy }
+    const nx = -ndy / dist
+    const ny = ndx / dist
+    cp1x += nx * offset
+    cp1y += ny * offset
+    cp2x += nx * offset
+    cp2y += ny * offset
+  }
+
+  return { cp1x, cp1y, cp2x, cp2y }
+}
+
+/**
+ * Point on a cubic bezier at parameter t.
+ */
+export function cubicBezierPoint(
+  x1: number, y1: number,
+  cp1x: number, cp1y: number,
+  cp2x: number, cp2y: number,
+  x2: number, y2: number,
+  t: number
+): { x: number; y: number } {
+  const mt = 1 - t
+  return {
+    x: mt * mt * mt * x1 + 3 * mt * mt * t * cp1x + 3 * mt * t * t * cp2x + t * t * t * x2,
+    y: mt * mt * mt * y1 + 3 * mt * mt * t * cp1y + 3 * mt * t * t * cp2y + t * t * t * y2,
+  }
+}
+
+/**
+ * Tangent angle at the end of a cubic bezier (t=1).
+ */
+export function cubicBezierEndAngle(
+  cp2x: number, cp2y: number,
+  x2: number, y2: number
+): number {
+  return Math.atan2(y2 - cp2y, x2 - cp2x)
+}
+
+/**
+ * Minimum distance from a point to a cubic bezier curve.
+ */
+export function distToCubicBezier(
+  px: number, py: number,
+  x1: number, y1: number,
+  cp1x: number, cp1y: number,
+  cp2x: number, cp2y: number,
+  x2: number, y2: number,
+  samples = 24
+): number {
+  let minDist = Infinity
+  for (let i = 0; i <= samples; i++) {
+    const t = i / samples
+    const pt = cubicBezierPoint(x1, y1, cp1x, cp1y, cp2x, cp2y, x2, y2, t)
+    const d = Math.hypot(px - pt.x, py - pt.y)
+    if (d < minDist) minDist = d
+  }
+  return minDist
 }

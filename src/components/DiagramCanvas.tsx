@@ -138,6 +138,7 @@ export function DiagramCanvas() {
   const boxDrawStartRef = useRef<{ screenX: number; screenY: number } | null>(null)
   const boxDrawPreviewWorldRef = useRef<{ x1: number; y1: number; x2: number; y2: number } | null>(null)
   const shiftHeldRef = useRef(false)
+  const metaHeldRef = useRef(false)
 
   const dragStateRef = useRef<{
     kind: 'move'
@@ -162,7 +163,7 @@ export function DiagramCanvas() {
     deleteElement, deleteSelected, deleteConnection, updateConnection,
     openIconSearch, openTextInput, closeTextInput,
     startConnecting, finishConnecting, cancelConnecting, setConnectionPreviewPos,
-    openConnectCreateMenu, setPendingConnectionFrom, cyclePendingConnectionStyle, openConnectionStyleMenu,
+    openConnectCreateMenu, setPendingConnectionFrom, cyclePendingConnectionStyle, openConnectionStyleMenu, connectionRouting, setConnectionRouting,
     pushHistory,
     connectingFromId, connectionPreviewPos,
     copySelected, paste, pasteAt, clipboard,
@@ -190,6 +191,7 @@ export function DiagramCanvas() {
   const connectCandidateIdRef = useRef<string | null>(null)
   const pendingConnectionStyle = useAppStore((s) => s.pendingConnectionStyle)
   const pendingConnectionStyleRef = useRef(pendingConnectionStyle); pendingConnectionStyleRef.current = pendingConnectionStyle
+  const connectionRoutingRef = useRef(connectionRouting); connectionRoutingRef.current = connectionRouting
 
   // Imperatively sets canvas cursor based on current mode, drag state, and hover position
   const updateCursor = useCallback((canvasX: number, canvasY: number) => {
@@ -209,7 +211,7 @@ export function DiagramCanvas() {
     const hit = hitTest(elementsRef.current, worldPos.x, worldPos.y, selectedIdsRef.current[0] ?? null)
     if (hit.kind === 'handle') { canvas.style.cursor = HANDLE_CURSORS[hit.handle]; return }
     if (hit.kind === 'element') { canvas.style.cursor = 'move'; return }
-    const connId = hitTestConnection(connectionsRef.current, elementsRef.current, worldPos.x, worldPos.y)
+    const connId = hitTestConnection(connectionsRef.current, elementsRef.current, worldPos.x, worldPos.y, 8, connectionRoutingRef.current)
     canvas.style.cursor = connId ? 'pointer' : 'default'
   }, [])
 
@@ -235,6 +237,7 @@ export function DiagramCanvas() {
       useAppStore.getState().defaultFontSize,
       connectCandidateIdRef.current,
       pendingConnectionStyleRef.current,
+      connectionRoutingRef.current,
     )
     rafRef.current = requestAnimationFrame(renderFrame)
   }, [])
@@ -409,6 +412,12 @@ export function DiagramCanvas() {
         }
         return
       }
+      if ((e.key === 'l' || e.key === 'L') && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault()
+        const modes = ['straight', 'curve'] as const
+        setConnectionRouting(modes[(modes.indexOf(connectionRouting) + 1) % modes.length])
+        return
+      }
       if ((e.key === 'r' || e.key === 'R') && !e.metaKey && !e.ctrlKey) {
         if (selectedConnectionIdRef.current) {
           e.preventDefault()
@@ -494,7 +503,7 @@ export function DiagramCanvas() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [deleteElement, deleteSelected, deleteConnection, updateConnection, openIconSearch, openTextInput, closeTextInput, setSelected, setViewport, startConnecting, cancelConnecting, copySelected, paste, pasteAt, openColorPicker, closeColorPicker, openRename, closeRename, pushHistory, closeContextMenu, openConnectCreateMenu, setPendingConnectionFrom, addElement, cyclePendingConnectionStyle, openConnectionStyleMenu])
+  }, [deleteElement, deleteSelected, deleteConnection, updateConnection, openIconSearch, openTextInput, closeTextInput, setSelected, setViewport, startConnecting, cancelConnecting, copySelected, paste, pasteAt, openColorPicker, closeColorPicker, openRename, closeRename, pushHistory, closeContextMenu, openConnectCreateMenu, setPendingConnectionFrom, addElement, cyclePendingConnectionStyle, openConnectionStyleMenu, connectionRouting, setConnectionRouting])
 
   // Re-evaluate cursor whenever mode changes (box placement, tool mode)
   useEffect(() => {
@@ -552,7 +561,7 @@ export function DiagramCanvas() {
     if (hit.kind === 'element' && !selectedIdsRef.current.includes(hit.id)) {
       setSelected(hit.id)
     } else if (hit.kind === 'none' && !selectedIdsRef.current.length) {
-      const connId = hitTestConnection(connectionsRef.current, elementsRef.current, worldPos.x, worldPos.y)
+      const connId = hitTestConnection(connectionsRef.current, elementsRef.current, worldPos.x, worldPos.y, 8, connectionRoutingRef.current)
       if (connId) setSelectedConnection(connId)
     }
     openContextMenu(e.clientX, e.clientY)
@@ -561,6 +570,7 @@ export function DiagramCanvas() {
   // Record the first corner on mousedown and capture shift state for click handler
   const onMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     shiftHeldRef.current = e.shiftKey
+    metaHeldRef.current = e.metaKey || e.ctrlKey
     if (!boxPlacementActiveRef.current) return
     boxDrawStartRef.current = { screenX: e.clientX, screenY: e.clientY }
     const canvas = canvasRef.current
@@ -664,7 +674,7 @@ export function DiagramCanvas() {
           return
         }
         // Try connections
-        const connId = hitTestConnection(connectionsRef.current, elementsRef.current, worldPos.x, worldPos.y)
+        const connId = hitTestConnection(connectionsRef.current, elementsRef.current, worldPos.x, worldPos.y, 8, connectionRoutingRef.current)
         if (connId) { setSelectedConnection(connId); return }
         setSelectedIds([])
       },
@@ -720,6 +730,35 @@ export function DiagramCanvas() {
             : [hit.id]
           if (!selectedIdsRef.current.includes(hit.id)) setSelectedIds([hit.id])
           pushHistory()
+
+          // Cmd/Ctrl+drag: duplicate elements and drag the copies
+          if (metaHeldRef.current) {
+            const srcIds = hierarchyMoveRef.current
+              ? collectContainedIds(baseIds, elementsRef.current)
+              : baseIds
+            const idMap = new Map<string, string>()
+            const clones: import('../store/types').DiagramElement[] = []
+            for (const id of srcIds) {
+              const el = elementsRef.current.find((e) => e.id === id)
+              if (!el) continue
+              const newId = Math.random().toString(36).slice(2, 10)
+              idMap.set(id, newId)
+              clones.push({ ...el, id: newId })
+            }
+            for (const clone of clones) addElement(clone)
+            const newIds = clones.map((c) => c.id)
+            setSelectedIds(newIds)
+            dragStateRef.current = {
+              kind: 'move',
+              ids: newIds,
+              startWorldX: worldPos.x,
+              startWorldY: worldPos.y,
+              origPositions: new Map(clones.map((el) => [el.id, { x: el.x, y: el.y }])),
+            }
+            updateCursor(screenX, screenY)
+            return
+          }
+
           const idsToMove = hierarchyMoveRef.current
             ? collectContainedIds(baseIds, elementsRef.current)
             : baseIds

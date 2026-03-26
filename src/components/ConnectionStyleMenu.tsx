@@ -89,7 +89,6 @@ export function ConnectionStyleMenu() {
   if (!connectionStyleMenuPos) return null
 
   const { screenX, screenY, connectionId } = connectionStyleMenuPos
-  // connectionId === null means we're styling a pending connection being drawn
   const isPending = connectionId === null
   const conn = isPending ? null : connections.find((c) => c.id === connectionId)
   if (!isPending && !conn) return null

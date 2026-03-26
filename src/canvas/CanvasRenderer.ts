@@ -3,7 +3,8 @@ import { buildViewportMatrix } from './ViewportMatrix'
 import { getIconImage, loadIcon, themeToHex } from '../icons/iconifyClient'
 import { getThemeColors, type ThemeColors } from '../themes/themeColors'
 import { measureTextElement, parseMarkdownLine, segmentFont, measureMarkdownLine, TEXT_PAD_X, TEXT_PAD_Y, TEXT_LINE_H } from './textMetrics'
-import { getCurveOffset, getIconAvoidanceOffset, curveControlPoint as connCurveControlPoint, quadBezierEndAngle as connQuadBezierEndAngle, quadBezierPoint as connQuadBezierPoint } from './connectionPath'
+import { getCurveOffset, getIconAvoidanceOffset, curveControlPoint as connCurveControlPoint, quadBezierEndAngle as connQuadBezierEndAngle, quadBezierPoint as connQuadBezierPoint, smoothCurveControlPoints, cubicBezierEndAngle, cubicBezierPoint } from './connectionPath'
+import type { ConnectionRouting } from '../store/types'
 import { resolveColorForBackground } from '../themes/colorNames'
 
 const GRID_SIZE = 40
@@ -415,7 +416,8 @@ function drawArrow(
   color: string,
   connStyle: import('../store/types').ConnectionStyle = 'solid',
   lineWidth = 1.5,
-  curveOffset = 0
+  curveOffset = 0,
+  routing: ConnectionRouting = 'straight'
 ) {
   const headLen = 10
 
@@ -434,7 +436,12 @@ function drawArrow(
   ctx.beginPath()
   ctx.moveTo(x1, y1)
   let angle: number
-  if (curveOffset !== 0) {
+
+  if (routing === 'curve' && curveOffset === 0) {
+    const { cp1x, cp1y, cp2x, cp2y } = smoothCurveControlPoints(x1, y1, x2, y2, 0)
+    ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x2, y2)
+    angle = cubicBezierEndAngle(cp2x, cp2y, x2, y2)
+  } else if (curveOffset !== 0) {
     const { cx, cy } = connCurveControlPoint(x1, y1, x2, y2, curveOffset)
     ctx.quadraticCurveTo(cx, cy, x2, y2)
     angle = connQuadBezierEndAngle(cx, cy, x2, y2)
@@ -469,7 +476,8 @@ function drawConnections(
   _theme: string,
   fontSize: number,
   tc: ThemeColors,
-  connectedConnectionIds: Set<string> | null = null
+  connectedConnectionIds: Set<string> | null = null,
+  routing: ConnectionRouting = 'straight'
 ) {
   const elMap = new Map(elements.map((e) => [e.id, e]))
   // Collect icon elements for avoidance routing
@@ -487,14 +495,13 @@ function drawConnections(
     const dimmed = connectedConnectionIds !== null && !connectedConnectionIds.has(conn.id)
 
     const biOffset = getCurveOffset(conn, connections)
-    // Compute avoidance offset to route around icon elements
     const fromCenter = elementCenter(from)
     const toCenter = elementCenter(to)
+
     const fromBounds = elementBounds(from)
     const toBounds = elementBounds(to)
     const avoidIcons = iconObstacles.filter((e) => {
       if (e.id === conn.fromId || e.id === conn.toId) return false
-      // Skip icons that overlap with the from or to element (they're at the endpoints, not in the way)
       const PAD = 10
       const overlapsFrom = e.x < from.x + fromBounds.width + PAD && e.x + e.width > from.x - PAD
         && e.y < from.y + fromBounds.height + PAD && e.y + e.height > from.y - PAD
@@ -506,6 +513,8 @@ function drawConnections(
       ? getIconAvoidanceOffset(fromCenter.x, fromCenter.y, toCenter.x, toCenter.y, avoidIcons)
       : 0
     const offset = biOffset + avoidOffset
+
+    // Resolve endpoints
     let aimFrom: { x: number; y: number } = toCenter
     let aimTo: { x: number; y: number } = fromCenter
     if (offset !== 0) {
@@ -519,8 +528,6 @@ function drawConnections(
       start = bboxEdgePoint(from, aimFrom)
       end = bboxEdgePoint(to, aimTo)
     } else {
-      // Straight connections: two-pass so both endpoints face each other.
-      // Fixes arrows going through icons when one element is inside another.
       const s0 = bboxEdgePoint(from, aimFrom)
       end = bboxEdgePoint(to, s0)
       start = bboxEdgePoint(from, end)
@@ -533,7 +540,7 @@ function drawConnections(
     if (resolvedConn && tc.canvasConnectionSeparator !== 'transparent') {
       ctx.save()
       if (dimmed) ctx.globalAlpha = DIM_ALPHA
-      drawArrow(ctx, start.x, start.y, end.x, end.y, tc.canvasConnectionSeparator, 'solid', 6, offset)
+      drawArrow(ctx, start.x, start.y, end.x, end.y, tc.canvasConnectionSeparator, 'solid', 6, offset, routing)
       ctx.restore()
     }
 
@@ -543,14 +550,21 @@ function drawConnections(
       ctx.shadowColor = resolvedConn ?? tc.accent
       ctx.shadowBlur = 10
     }
-    drawArrow(ctx, start.x, start.y, end.x, end.y, color, conn.style ?? 'solid', 1.5, offset)
+    drawArrow(ctx, start.x, start.y, end.x, end.y, color, conn.style ?? 'solid', 1.5, offset, routing)
     ctx.restore()
 
     if (conn.label) {
-      // Compute label position at midpoint of curve
-      const labelPos = offset !== 0
-        ? connQuadBezierPoint(start.x, start.y, connCurveControlPoint(start.x, start.y, end.x, end.y, offset).cx, connCurveControlPoint(start.x, start.y, end.x, end.y, offset).cy, end.x, end.y, 0.5)
-        : { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 }
+      // Compute label position at midpoint of path
+      let labelPos: { x: number; y: number }
+      if (routing === 'curve' && offset === 0) {
+        const { cp1x, cp1y, cp2x, cp2y } = smoothCurveControlPoints(start.x, start.y, end.x, end.y, 0)
+        labelPos = cubicBezierPoint(start.x, start.y, cp1x, cp1y, cp2x, cp2y, end.x, end.y, 0.5)
+      } else if (offset !== 0) {
+        const cp = connCurveControlPoint(start.x, start.y, end.x, end.y, offset)
+        labelPos = connQuadBezierPoint(start.x, start.y, cp.cx, cp.cy, end.x, end.y, 0.5)
+      } else {
+        labelPos = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 }
+      }
 
       ctx.save()
       ctx.font = `${Math.max(10, fontSize - 2)}px ${tc.fontUi}`
@@ -699,7 +713,8 @@ export function render(
   theme: string,
   defaultFontSize: number,
   connectCandidateId: string | null = null,
-  pendingConnectionStyle: import('../store/types').ConnectionStyle = 'solid'
+  pendingConnectionStyle: import('../store/types').ConnectionStyle = 'solid',
+  connectionRouting: ConnectionRouting = 'straight'
 ) {
   const tc = getThemeColors()
 
@@ -757,7 +772,7 @@ export function render(
     ctx.restore()
   }
 
-  drawConnections(ctx, connections, elements, selectedConnectionId, theme, defaultFontSize, tc, connectedConnectionIds)
+  drawConnections(ctx, connections, elements, selectedConnectionId, theme, defaultFontSize, tc, connectedConnectionIds, connectionRouting)
 
   // Highlight connect candidate with connection-preview color outline
   if (connectCandidateId) {
@@ -788,7 +803,7 @@ export function render(
       const targetPos = candEl ? bboxEdgePoint(candEl, elementCenter(fromEl)) : connectionPreviewPos
       const startPos = candEl ? bboxEdgePoint(fromEl, elementCenter(candEl)) : bboxEdgePoint(fromEl, connectionPreviewPos)
       const arrowColor = candEl ? tc.canvasConnectCandidate : tc.canvasConnectionPreview
-      drawArrow(ctx, startPos.x, startPos.y, targetPos.x, targetPos.y, arrowColor, pendingConnectionStyle)
+      drawArrow(ctx, startPos.x, startPos.y, targetPos.x, targetPos.y, arrowColor, pendingConnectionStyle, 1.5, 0, connectionRouting)
     }
   }
 

@@ -5,7 +5,7 @@ import { Tooltip } from './Tooltip'
 import type { Diagram } from '../store/types'
 
 export function Toolbar() {
-  const { selectedIds, deleteSelected, openIconSearch, viewport, setViewport, theme, toggleTheme, toolMode, rotationEnabled, toggleRotation, hierarchyMove, toggleHierarchyMove, defaultFontSize, setDefaultFontSize, diagrams, activeDiagramId, elements, connections, importDiagram, loadWorkspace } = useAppStore()
+  const { selectedIds, deleteSelected, openIconSearch, viewport, setViewport, theme, toggleTheme, toolMode, rotationEnabled, toggleRotation, hierarchyMove, toggleHierarchyMove, connectionRouting, setConnectionRouting, defaultFontSize, setDefaultFontSize, diagrams, activeDiagramId, elements, connections, importDiagram, loadWorkspace } = useAppStore()
   const resolvedTheme = useAppStore(selectResolvedTheme)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const workspaceFileInputRef = useRef<HTMLInputElement>(null)
@@ -263,6 +263,28 @@ export function Toolbar() {
           <rect x="13" y="7" width="5" height="4" rx="1" />
           <rect x="9" y="14" width="6" height="4" rx="1" />
         </svg>
+      </ToolBtn>
+
+      {/* Line routing toggle */}
+      <ToolBtn
+        title={`Line routing: ${connectionRouting} (L to cycle)`}
+        onClick={() => {
+          const modes = ['straight', 'curve'] as const
+          setConnectionRouting(modes[(modes.indexOf(connectionRouting) + 1) % modes.length])
+        }}
+      >
+        {connectionRouting === 'straight' ? (
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="5" y1="12" x2="19" y2="12" />
+            <polyline points="15,8 19,12 15,16" fill="none" />
+          </svg>
+        ) : (
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M5,7 C11,7 13,17 19,17" fill="none" />
+            <polyline points="15,13 19,17 15,21" fill="none" />
+          </svg>
+        )}
+        <span style={{ fontSize: 10, minWidth: 40, textAlign: 'left' }}>{connectionRouting}</span>
       </ToolBtn>
 
       {/* Rotation toggle */}

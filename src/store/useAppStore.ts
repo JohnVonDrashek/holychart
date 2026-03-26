@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { ViewportState, DiagramElement, ElementId, ToolMode, Theme, ConnectionElement, ConnectionStyle, Diagram } from './types'
+import type { ViewportState, DiagramElement, ElementId, ToolMode, Theme, ConnectionElement, ConnectionStyle, ConnectionRouting, Diagram } from './types'
 import { THEMES } from '../themes'
 
 // ── History helper ────────────────────────────────────────────────────────────
@@ -60,6 +60,7 @@ interface StoredData {
   defaultFontSize?: number
   rotationEnabled?: boolean
   hierarchyMove?: boolean
+  connectionRouting?: ConnectionRouting
 }
 
 function loadFromStorage(): StoredData | null {
@@ -69,9 +70,9 @@ function loadFromStorage(): StoredData | null {
   } catch { return null }
 }
 
-function saveToStorage(diagrams: Diagram[], activeDiagramId: string, theme: Theme, defaultFontSize: number, rotationEnabled: boolean, hierarchyMove: boolean): void {
+function saveToStorage(diagrams: Diagram[], activeDiagramId: string, theme: Theme, defaultFontSize: number, rotationEnabled: boolean, hierarchyMove: boolean, connectionRouting: ConnectionRouting): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ diagrams, activeDiagramId, theme, defaultFontSize, rotationEnabled, hierarchyMove }))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ diagrams, activeDiagramId, theme, defaultFontSize, rotationEnabled, hierarchyMove, connectionRouting }))
   } catch { /* quota exceeded */ }
 }
 
@@ -130,6 +131,7 @@ interface AppState {
   connectionPreviewPos: { x: number; y: number } | null
   pendingConnectionFrom: ElementId | null
   pendingConnectionStyle: ConnectionStyle
+  connectionRouting: ConnectionRouting
   connectCreateMenuPos: { screenX: number; screenY: number; worldX: number; worldY: number; fromId?: ElementId } | null
   elementActionMenuPos: { screenX: number; screenY: number; elementId: ElementId } | null
   connectionStyleMenuPos: { screenX: number; screenY: number; connectionId: ElementId | null } | null
@@ -199,6 +201,7 @@ interface AppState {
   cancelConnecting: () => void
   cyclePendingConnectionStyle: () => void
   setPendingConnectionStyle: (style: ConnectionStyle) => void
+  setConnectionRouting: (routing: ConnectionRouting) => void
   setConnectionPreviewPos: (pos: { x: number; y: number } | null) => void
 }
 
@@ -242,6 +245,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   connectionPreviewPos: null,
   pendingConnectionFrom: null,
   pendingConnectionStyle: 'solid' as ConnectionStyle,
+  connectionRouting: saved?.connectionRouting ?? 'straight',
   connectCreateMenuPos: null,
   elementActionMenuPos: null,
   connectionStyleMenuPos: null,
@@ -511,6 +515,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     return { pendingConnectionStyle: next }
   }),
   setPendingConnectionStyle: (style) => set({ pendingConnectionStyle: style }),
+  setConnectionRouting: (routing) => set({ connectionRouting: routing }),
   setPendingConnectionFrom: (id) => set({ pendingConnectionFrom: id }),
   openConnectCreateMenu: (screenX, screenY, worldX, worldY) =>
     set((s) => ({
@@ -537,7 +542,7 @@ function flushSave(state: AppState): void {
   const diagrams = state.diagrams.map((d) =>
     d.id === state.activeDiagramId ? snapshot : d
   )
-  saveToStorage(diagrams, state.activeDiagramId, state.theme, state.defaultFontSize, state.rotationEnabled, state.hierarchyMove)
+  saveToStorage(diagrams, state.activeDiagramId, state.theme, state.defaultFontSize, state.rotationEnabled, state.hierarchyMove, state.connectionRouting)
 }
 
 let _saveTimer: ReturnType<typeof setTimeout> | null = null

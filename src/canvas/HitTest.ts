@@ -1,6 +1,7 @@
 import type { DiagramElement, ConnectionElement } from '../store/types'
 import { measureTextElement } from './textMetrics'
-import { getCurveOffset, getIconAvoidanceOffset, curveControlPoint, distToQuadBezier } from './connectionPath'
+import { getCurveOffset, getIconAvoidanceOffset, curveControlPoint, distToQuadBezier, smoothCurveControlPoints, distToCubicBezier } from './connectionPath'
+import type { ConnectionRouting } from '../store/types'
 
 function elBounds(el: DiagramElement): { width: number; height: number } {
   if (el.type === 'text') return measureTextElement(el.text, el.fontSize)
@@ -68,7 +69,8 @@ export function hitTestConnection(
   elements: DiagramElement[],
   wx: number,
   wy: number,
-  threshold = 8
+  threshold = 8,
+  routing: ConnectionRouting = 'straight'
 ): string | null {
   const elMap = new Map(elements.map((e) => [e.id, e]))
   for (const conn of connections) {
@@ -81,7 +83,7 @@ export function hitTestConnection(
     const fromC = { x: from.x + fw / 2, y: from.y + fh / 2 }
 
     const biOffset = getCurveOffset(conn, connections)
-    // Include icon avoidance offset (same logic as renderer)
+
     const avoidIcons = elements.filter((e) => e.type === 'icon' && e.id !== conn.fromId && e.id !== conn.toId)
       .filter((e) => {
         const PAD = 10
@@ -95,6 +97,7 @@ export function hitTestConnection(
       ? getIconAvoidanceOffset(fromC.x, fromC.y, toC.x, toC.y, avoidIcons)
       : 0
     const offset = biOffset + avoidOffset
+
     let aimFrom: { x: number; y: number } = toC
     let aimTo: { x: number; y: number } = fromC
     if (offset !== 0) {
@@ -113,7 +116,10 @@ export function hitTestConnection(
       p1 = bboxEdge(from, p2)
     }
 
-    if (offset !== 0) {
+    if (routing === 'curve' && offset === 0) {
+      const { cp1x, cp1y, cp2x, cp2y } = smoothCurveControlPoints(p1.x, p1.y, p2.x, p2.y, 0)
+      if (distToCubicBezier(wx, wy, p1.x, p1.y, cp1x, cp1y, cp2x, cp2y, p2.x, p2.y) <= threshold) return conn.id
+    } else if (offset !== 0) {
       const cp = curveControlPoint(p1.x, p1.y, p2.x, p2.y, offset)
       if (distToQuadBezier(wx, wy, p1.x, p1.y, cp.cx, cp.cy, p2.x, p2.y) <= threshold) return conn.id
     } else {

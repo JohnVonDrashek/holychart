@@ -43,6 +43,7 @@ export interface BoxElement extends BaseElement {
 export type DiagramElement = IconElement | TextElement | BoxElement
 
 export type ConnectionStyle = 'solid' | 'dashed' | 'animated'
+export type ConnectionRouting = 'straight' | 'curve'
 
 export interface ConnectionElement {
   id: ElementId
