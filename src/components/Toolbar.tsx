@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from 'react'
 import { useAppStore, selectResolvedTheme } from '../store/useAppStore'
 import { resetRotation } from '../canvas/ViewportMatrix'
 import { Tooltip } from './Tooltip'
+import { PictureInPictureButton } from './PictureInPictureButton'
 import type { Diagram } from '../store/types'
 
 const DEFAULT_VIEWPORT = { panX: 0, panY: 0, zoom: 1, rotation: 0 }
@@ -463,6 +464,8 @@ export function Toolbar() {
         </svg>
       </button>
       </Tooltip>
+
+      <PictureInPictureButton />
 
       {/* AI Skill */}
       <Tooltip content="AI diagram skill">
